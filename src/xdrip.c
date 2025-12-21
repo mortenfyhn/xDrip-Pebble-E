@@ -46,6 +46,7 @@ TextLayer *bg_layer = NULL;
 TextLayer *cgmtime_layer = NULL;
 TextLayer *delta_layer = NULL;        // BG DELTA LAYER
 TextLayer *message_layer = NULL;    // MESSAGE LAYER
+TextLayer *iob_layer = NULL;        // IOB LAYER
 TextLayer *battlevel_layer = NULL;
 TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
@@ -136,6 +137,7 @@ static char last_battlevel[4];
 static uint32_t current_cgm_time = 0;
 static uint32_t current_app_time = 0;
 static char current_bg_delta[14];
+static char current_iob[8];
 //static int converted_bgDelta = 0;
 
 // global BG snooze timer
@@ -265,6 +267,7 @@ static uint8_t alternator = 0;
 #define CGM_BLUETOOTH_KEY        111    // whether to vibrate no bluetooth
 #define CGM_COLLECT_HEALTH_KEY        112    // whether to log health data
 #define CGM_VIBE_KEY        11
+#define CGM_IOB_KEY        13        // TUPLE_CSTRING, IoB (Insulin on Board)
 #define CGM_SYNC_KEY        1000    // key pebble will use to request an update.
 #define PBL_PLATFORM        1001    // key pebble will use to send it's platform
 #define PBL_APP_VER        1002    // key pebble will use to send the face/app version.
@@ -1446,6 +1449,34 @@ static void load_bg_delta() {
 
 } // end load_bg_delta
 
+static void load_iob() {
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "IOB FUNCTION START");
+#endif
+
+    // CONSTANTS
+#define IOB_FORMATTED_SIZE 12
+    // VARIABLES
+    static char formatted_iob[IOB_FORMATTED_SIZE];
+
+    // CODE START
+
+    // check if IoB string is empty
+    if (strcmp(current_iob, "") == 0) {
+        text_layer_set_text(iob_layer, "");
+        return;
+    }
+
+    // Format and display IoB with unit
+    snprintf(formatted_iob, IOB_FORMATTED_SIZE, "IoB: %sU", current_iob);
+    text_layer_set_text(iob_layer, formatted_iob);
+
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "LOAD_IOB: iob_layer is \"%s\"", text_layer_get_text(iob_layer));
+#endif
+
+} // end load_iob
+
 static void load_battlevel() {
     //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, FUNCTION START");
 
@@ -1655,6 +1686,15 @@ void inbox_received_handler_cgm(DictionaryIterator *iterator, void *context) {
 #endif
                 load_bg_delta();
                 break; // break for CGM_DLTA_KEY
+
+            case CGM_IOB_KEY:;
+#define IOB_MSGSTR_SIZE 8
+                strncpy(current_iob, data->value->cstring, IOB_MSGSTR_SIZE);
+#ifdef DEBUG_LEVEL
+                APP_LOG(APP_LOG_LEVEL_INFO, "SYNC TUPLE: IOB - %s", current_iob);
+#endif
+                load_iob();
+                break; // break for CGM_IOB_KEY
 
             case CGM_UBAT_KEY:;
 #ifdef DEBUG_LEVEL
@@ -2166,6 +2206,26 @@ void window_load_cgm(Window *window_cgm) {
     add_debug_outline(window_layer_cgm, text_layer_get_layer(delta_layer));
 #endif
 
+    // IOB (Insulin on Board)
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW_LOAD: CREATE IOB LAYER");
+#endif
+#ifdef PBL_ROUND
+    iob_layer = text_layer_create(GRect(0, 126, 180, 20));
+#else
+    iob_layer = text_layer_create(GRect(0, 126, 143, 20));
+#endif
+#ifdef PBL_COLOR
+    text_layer_set_text_color(iob_layer, GColorBlack);
+#else
+    text_layer_set_text_color(iob_layer, GColorBlack);
+#endif
+    text_layer_set_background_color(iob_layer, GColorClear);
+    text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
+
+    layer_add_child(window_layer_cgm, text_layer_get_layer(iob_layer));
+
     // MESSAGE
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Message Text layer");
@@ -2422,6 +2482,8 @@ void window_load_cgm(Window *window_cgm) {
     #endif
 #endif
     load_bg_delta();
+    current_iob[0] = '\0';
+    load_iob();
     snprintf(last_battlevel, BATTLEVEL_MSGSTR_SIZE, " ");
 
 #ifdef TEST_MODE
@@ -2462,6 +2524,7 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&bg_layer);
     destroy_null_TextLayer(&cgmtime_layer);
     destroy_null_TextLayer(&delta_layer);
+    destroy_null_TextLayer(&iob_layer);
     destroy_null_TextLayer(&message_layer);
     destroy_null_TextLayer(&battlevel_layer);
     destroy_null_TextLayer(&watch_battlevel_layer);
