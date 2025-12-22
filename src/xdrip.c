@@ -7,7 +7,14 @@
 Make sure you set this to 0 before building a release. */
 
 #define DEBUG_LEVEL 1
+
 // #define TEST_MODE
+// Options in TEST_MODE, roughly matching xDrip's Pebble settings:
+#define TEST_SHOW_TREND        // Display trend graph
+// #define TEST_SHOW_DELTA      // Display glucose delta value
+// #define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
+#define TEST_SHOW_SLOPE_ARROWS // Display slope arrows
+
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
 
@@ -1154,7 +1161,7 @@ static void load_bg() {
 #endif
 
 #ifdef TEST_MODE
-    snprintf(last_bg,sizeof(last_bg),"%s","10.0");
+    snprintf(last_bg,sizeof(last_bg),"%s","12.8");
 #endif
     // BG parse, check snooze, and set text
 
@@ -2103,7 +2110,7 @@ void window_load_cgm(Window *window_cgm) {
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
-#ifdef TEST_MODE
+#if defined(TEST_MODE) && defined(TEST_SHOW_TREND)
     // Load test graph image for quick layout testing with glucose graph in emulator
     bg_trend_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEST_GRAPH);
     if (bg_trend_bitmap != NULL) {
@@ -2127,8 +2134,10 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     text_layer_set_background_color(delta_layer, GColorClear);
     text_layer_set_font(delta_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
-#ifdef TEST_MODE
-    text_layer_set_text(delta_layer,"0.5mmol");
+#if defined(TEST_MODE) && defined(TEST_SHOW_DELTA) && defined(TEST_SHOW_DELTA_UNITS)
+    text_layer_set_text(delta_layer,"+0.5 mmol/l");
+#elif defined(TEST_MODE) && defined(TEST_SHOW_DELTA)
+    text_layer_set_text(delta_layer,"+0.5");
 #endif
 
 #ifdef PBL_BW
@@ -2360,7 +2369,11 @@ void window_load_cgm(Window *window_cgm) {
     // " " (space) also shows these are init values, not bad or null values
     snprintf(current_icon, 1, " ");
 #ifdef TEST_MODE
-    snprintf(current_icon, 2, "1");
+    #ifdef TEST_SHOW_SLOPE_ARROWS
+        snprintf(current_icon, 2, "4"); // 4 = FLAT_ARROW
+    #else
+        snprintf(current_icon, 2, "0"); // 0 = NO_ARROW
+    #endif
     specvalue_alert=false;
 #endif
     load_icon();
@@ -2371,7 +2384,14 @@ void window_load_cgm(Window *window_cgm) {
     current_app_time = 0;
     snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "LOAD");
 #ifdef TEST_MODE
-    snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.08");
+    #if defined(TEST_SHOW_DELTA) && defined(TEST_SHOW_DELTA_UNITS)
+        snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.5 mmol/l");
+    #elif defined(TEST_SHOW_DELTA)
+        snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.5");
+    #else
+        current_bg_delta[0] = '\0'; // Don't show LOADING state
+        layer_set_hidden(text_layer_get_layer(delta_layer), true);
+    #endif
 #endif
     load_bg_delta();
     current_iob[0] = '\0';
