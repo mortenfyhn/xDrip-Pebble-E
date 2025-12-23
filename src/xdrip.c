@@ -9,7 +9,7 @@ Make sure you set this to 0 before building a release. */
 #define DEBUG_LEVEL 1
 
 // TEST_MODE: Display test data instead of real data
-// #define TEST_MODE
+#define TEST_MODE
 #define TEST_SHOW_TREND        // Display trend graph
 // #define TEST_SHOW_DELTA      // Display glucose delta value
 // #define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
@@ -2143,9 +2143,10 @@ void window_load_cgm(Window *window_cgm) {
 #else
     // New B&W arrows are 30x30 px to better match the Bitham 42 font, which has
     // approx 30 px cap height.
-    // todo use bg_layer_width instead of "84"
-    const int kern = 6;
-    icon_layer = bitmap_layer_create(GRect(84 + kern, MARGIN, 30, 30));
+    const int bitham_42_cap_height = 30;
+    const int icon_layer_kern = 6;
+    const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
+    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, MARGIN, bitham_42_cap_height, bitham_42_cap_height));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
@@ -2267,7 +2268,6 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, GColorDukeBlue);
     text_layer_set_background_color(bg_layer, GColorClear);
 #else
-    const int bg_layer_width = 84; // Exactly big enough for "10.0" in Bitham 42
     const int bg_layer_y_offset = -12 + MARGIN;
     bg_layer = text_layer_create(GRect(MARGIN, bg_layer_y_offset, bg_layer_width, 42));
     text_layer_set_text_color(bg_layer, GColorBlack);
@@ -2362,8 +2362,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(date_app_layer, GColorWhite);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #else  // PBL_BW
-    const int date_app_width = 20;
-    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, 132, date_app_width, 24));
+    const int date_app_width = 20;  // enough for two digits in gothic 24 bold
+    const int date_app_xpos = 134;  // todo compute properly
+    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, date_app_xpos, date_app_width, 24));
     text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #endif
