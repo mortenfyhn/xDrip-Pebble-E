@@ -8,12 +8,26 @@ Make sure you set this to 0 before building a release. */
 
 #define DEBUG_LEVEL 1
 
+// TEST_MODE: Display test data instead of real data
 // #define TEST_MODE
-// Options in TEST_MODE, roughly matching xDrip's Pebble settings:
 #define TEST_SHOW_TREND        // Display trend graph
 // #define TEST_SHOW_DELTA      // Display glucose delta value
 // #define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
 #define TEST_SHOW_SLOPE_ARROWS // Display slope arrows
+
+// DEBUG_OUTLINE: Display layer outlines for debugging
+// #define DEBUG_OUTLINE
+// #define DEBUG_OUTLINE_BG         // Blood glucose value
+// #define DEBUG_OUTLINE_ARROW      // Trend arrow
+// #define DEBUG_OUTLINE_DELTA      // BG delta/change
+// #define DEBUG_OUTLINE_GRAPH      // Trend graph
+// #define DEBUG_OUTLINE_TIMEAGO    // Time ago
+// #define DEBUG_OUTLINE_TIME       // Current time
+// #define DEBUG_OUTLINE_DATE       // Date
+// #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)
+
+// Layout constants
+#define MARGIN 2
 
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
@@ -37,6 +51,12 @@ TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
 TextLayer *date_app_layer = NULL;
 
+// DEBUG: Array to hold debug outline layers
+#ifdef DEBUG_OUTLINE
+#define MAX_DEBUG_OUTLINES 10
+static Layer *debug_outline_layers[MAX_DEBUG_OUTLINES];
+static int debug_outline_count = 0;
+#endif
 
 BitmapLayer *icon_layer = NULL;
 BitmapLayer *bg_trend_layer = NULL;
@@ -714,6 +734,7 @@ static void draw_date_from_app() {
     // format current date from app
     if (strcmp(time_watch_text, "00:00") == 0) {
         if (clock_is_24h_style() == true) {
+            // draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%H:%M", current_d_app);
             draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%H:%M", current_d_app);
         } else {
             draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%l:%M", current_d_app);
@@ -1161,7 +1182,7 @@ static void load_bg() {
 #endif
 
 #ifdef TEST_MODE
-    snprintf(last_bg,sizeof(last_bg),"%s","12.8");
+    snprintf(last_bg,sizeof(last_bg),"%s","10.0");
 #endif
     // BG parse, check snooze, and set text
 
@@ -1272,7 +1293,8 @@ static void load_cgmtime() {
     // CODE START
 #ifdef TEST_MODE
     time_t temp_time = time(NULL);
-    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (3 * 60); // 3 minutes ago
+    // 59 minutes ago, takes most space (more than "now") so suitable for testing
+    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (59 * 60);
 #endif
 
     // initialize label buffer
@@ -2043,6 +2065,40 @@ static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx)
 }
 #endif
 
+// DEBUG: Layer update procedure to draw outline
+#ifdef DEBUG_OUTLINE
+static void debug_outline_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_draw_rect(ctx, bounds);
+}
+
+// Helper function to add debug outline to any layer (TextLayer or BitmapLayer)
+static void add_debug_outline(Layer *parent, Layer *target_layer) {
+    if (debug_outline_count >= MAX_DEBUG_OUTLINES) {
+        return; // Safety check
+    }
+
+    GRect bounds = layer_get_frame(target_layer);
+    Layer *outline_layer = layer_create(bounds);
+    layer_set_update_proc(outline_layer, debug_outline_update_proc);
+    layer_add_child(parent, outline_layer);
+
+    debug_outline_layers[debug_outline_count++] = outline_layer;
+}
+
+// Helper function to clean up all debug outlines
+static void destroy_debug_outlines(void) {
+    for (int i = 0; i < debug_outline_count; i++) {
+        if (debug_outline_layers[i] != NULL) {
+            layer_destroy(debug_outline_layers[i]);
+            debug_outline_layers[i] = NULL;
+        }
+    }
+    debug_outline_count = 0;
+}
+#endif
+
 void window_load_cgm(Window *window_cgm) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW LOAD");
 
@@ -2065,7 +2121,7 @@ void window_load_cgm(Window *window_cgm) {
     lower_face_layer = bitmap_layer_create(GRect(0,0,0,0));  // Unused, kept for compatibility
 #else
     // Rectangular watch (Pebble 2): 144x168, use single layer for full screen
-    upper_face_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+    upper_face_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, PBL_DISPLAY_HEIGHT));
     lower_face_layer = bitmap_layer_create(GRect(0,0,0,0));  // Unused, kept for compatibility
 #endif
     // Both layers white (lower_face_layer is 0x0 so effectively invisible)
@@ -2087,18 +2143,23 @@ void window_load_cgm(Window *window_cgm) {
 #else
     // New B&W arrows are 30x30 px to better match the Bitham 42 font, which has
     // approx 30 px cap height.
-    icon_layer = bitmap_layer_create(GRect(95, 5, 30, 30));
+    // todo use bg_layer_width instead of "84"
+    const int kern = 6;
+    icon_layer = bitmap_layer_create(GRect(84 + kern, MARGIN, 30, 30));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_ARROW) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
+#endif
 
     //create the bg_trend_layer
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Trend Bitmap layer");
 #endif
 #ifdef PBL_PLATFORM_BASALT
-    bg_trend_layer = bitmap_layer_create(GRect(0,0,144,84));
+    bg_trend_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, 84));
     bitmap_layer_set_compositing_mode(bg_trend_layer, GCompOpSet);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
 #endif
@@ -2107,7 +2168,7 @@ void window_load_cgm(Window *window_cgm) {
     // Position: x=0, y=24 (24px from top for BG value/icons)
     // Size: 144px wide (full screen) × 100px tall (was 64px)
     // Receives 144x100px 2-color PNG from xDrip and displays it here
-    bg_trend_layer = bitmap_layer_create(GRect(0,24,144,100));
+    bg_trend_layer = bitmap_layer_create(GRect(0, 34, PBL_DISPLAY_WIDTH, 100));
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
@@ -2126,7 +2187,8 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef PBL_ROUND
     delta_layer = text_layer_create(GRect(0, 36, 180, 50));
 #else
-    delta_layer = text_layer_create(GRect(0, 36, 143, 50));
+    const int delta_layer_width = 100;
+    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - MARGIN, 28, delta_layer_width, 24));
 #endif
 #ifdef PBL_COLOR
     text_layer_set_text_color(delta_layer, GColorDukeBlue);
@@ -2134,7 +2196,7 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(delta_layer, GColorBlack);
 #endif
     text_layer_set_background_color(delta_layer, GColorClear);
-    text_layer_set_font(delta_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+    text_layer_set_font(delta_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 #if defined(TEST_MODE) && defined(TEST_SHOW_DELTA) && defined(TEST_SHOW_DELTA_UNITS)
     text_layer_set_text(delta_layer,"+0.5 mmol/l");
 #elif defined(TEST_MODE) && defined(TEST_SHOW_DELTA)
@@ -2150,6 +2212,9 @@ void window_load_cgm(Window *window_cgm) {
 #endif
 
     layer_add_child(window_layer_cgm, text_layer_get_layer(delta_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DELTA) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(delta_layer));
+#endif
 
     // IOB (Insulin on Board)
 #ifdef DEBUG_LEVEL
@@ -2202,13 +2267,18 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, GColorDukeBlue);
     text_layer_set_background_color(bg_layer, GColorClear);
 #else
-    bg_layer = text_layer_create(GRect(0, -7, 95, 42));
+    const int bg_layer_width = 84; // Exactly big enough for "10.0" in Bitham 42
+    const int bg_layer_y_offset = -12 + MARGIN;
+    bg_layer = text_layer_create(GRect(MARGIN, bg_layer_y_offset, bg_layer_width, 42));
     text_layer_set_text_color(bg_layer, GColorBlack);
     text_layer_set_background_color(bg_layer, GColorClear);
 #endif
     text_layer_set_font(bg_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-    text_layer_set_text_alignment(bg_layer, GTextAlignmentCenter);
+    text_layer_set_text_alignment(bg_layer, GTextAlignmentRight);
     layer_add_child(window_layer_cgm, text_layer_get_layer(bg_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_BG) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(bg_layer));
+#endif
 
 
     // CGM TIME AGO READING
@@ -2218,7 +2288,7 @@ void window_load_cgm(Window *window_cgm) {
     //cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #ifdef PBL_BW
     // To the left, just beneath glucose value
-    cgmtime_layer = text_layer_create(GRect(4, 30, 40, 24));
+    cgmtime_layer = text_layer_create(GRect(MARGIN, 28, 34, 24));
 #elif PBL_ROUND
     cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #else
@@ -2235,10 +2305,16 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_font(cgmtime_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
     layer_add_child(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIMEAGO) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
+#endif
 
 #ifdef PBL_BW
     // top layer on pebble classic
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_GRAPH)
+    add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
+#endif
 #endif
 
     // CURRENT ACTUAL TIME FROM WATCH
@@ -2259,14 +2335,18 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(time_watch_layer, GColorWhite);
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #else
-    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - 4; // Screen height - text size - margin
-    time_watch_layer = text_layer_create(GRect(0, time_layer_ypos, 125, 42));
+    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - MARGIN; // Screen height - layer height - margin
+    // No room for left edge margin
+    time_watch_layer = text_layer_create(GRect(-1, time_layer_ypos, 126, 42));
     text_layer_set_text_color(time_watch_layer, GColorBlack);
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #endif
     text_layer_set_font(time_watch_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(time_watch_layer, GTextAlignmentCenter);
     layer_add_child(window_layer_cgm, text_layer_get_layer(time_watch_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIME) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(time_watch_layer));
+#endif
 
     // CURRENT ACTUAL DATE FROM APP
     // HIDDEN: Same pattern as time_watch_layer (see comments above)
@@ -2282,14 +2362,18 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(date_app_layer, GColorWhite);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #else  // PBL_BW
-    date_app_layer = text_layer_create(GRect(119, 132, 24, 24));
+    const int date_app_width = 20;
+    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, 132, date_app_width, 24));
     text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #endif
     text_layer_set_font(date_app_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(date_app_layer, GTextAlignmentCenter);
+    text_layer_set_text_alignment(date_app_layer, GTextAlignmentRight);
     draw_date_from_app();
     layer_add_child(window_layer_cgm, text_layer_get_layer(date_app_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(date_app_layer));
+#endif
 
     // PHONE BATTERY LEVEL
     // HIDDEN: Same pattern as time_watch_layer (see comments above)
@@ -2446,6 +2530,11 @@ void window_unload_cgm(Window *window_cgm) {
     //destroy the face background layers.
     destroy_null_BitmapLayer(&lower_face_layer);
     destroy_null_BitmapLayer(&upper_face_layer);
+
+    // DEBUG: Clean up all debug outline layers
+#ifdef DEBUG_OUTLINE
+    destroy_debug_outlines();
+#endif
 
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD OUT");
 } // end window_unload_cgm

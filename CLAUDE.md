@@ -141,6 +141,8 @@ Data loading functions called from message handler:
 
 ## Customization Guide
 
+**Target Hardware**: The user has a **Pebble 2 Duo** (black & white display, 144x168 pixels). When making changes, use the `PBL_BW` conditional compilation paths.
+
 The user is customizing this watchface for personal use with the following goals:
 - White background throughout
 - Clock information: Time, Date, Week number, Battery indicators (more intuitive than "B:" and "W:")
