@@ -9,7 +9,7 @@ Make sure you set this to 0 before building a release. */
 #define DEBUG_LEVEL 1
 
 // TEST_MODE: Display test data instead of real data
-#define TEST_MODE
+// #define TEST_MODE
 #define TEST_SHOW_TREND        // Display trend graph
 #define TEST_SHOW_DELTA      // Display glucose delta value
 #define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
