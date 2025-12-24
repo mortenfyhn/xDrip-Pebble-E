@@ -2286,7 +2286,7 @@ void window_load_cgm(Window *window_cgm) {
 #else  // PBL_BW
     const int date_app_width = 20;  // enough for two digits in gothic 24 bold
     const int date_app_xpos = PBL_DISPLAY_WIDTH - date_app_width - EDGE_MARGIN;
-    const int date_app_ypos = 134;  // todo compute properly
+    const int date_app_ypos = 132;  // todo compute properly
     date_app_layer = text_layer_create(GRect(date_app_xpos, date_app_ypos, date_app_width, 24));
     text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
