@@ -96,7 +96,6 @@ static void health_unsubscribe();
 
 #ifdef PBL_PLATFORM_APLITE
 //#define CHUNK_SIZE 256
-static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx);
 #else
 //#define CHUNK_SIZE 1024
 #endif
@@ -1977,91 +1976,6 @@ void handle_second_tick_cgm(struct tm *tick_time_cgm, TimeUnits units_changed_cg
 } // end handle_minute_tick_cgm
 
 
-#ifdef PBL_BW
-
-static uint8_t breverse(uint8_t b);
-static uint8_t breverse(uint8_t b)
-{
-    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-    return b;
-}
-
-static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx)
-{
-    GBitmap *framebuffer;
-    const GBitmap *graphic = bitmap_layer_get_bitmap((BitmapLayer *)layer);
-    int height;
-    uint8_t finalBits;
-    uint8_t *bfr, *bitmap;
-
-    if (global_lock) return;
-    global_lock = true;
-
-    framebuffer = graphics_capture_frame_buffer(ctx);
-    if (framebuffer == NULL)
-        {
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "capture frame buffer failed!!");
-        }
-    else
-        {
-            //  APP_LOG(APP_LOG_LEVEL_DEBUG, "capture frame buffer succeeded %i vs %i and %i vs %i with bpw: %i vs %i",gbitmap_get_bounds(graphic).size.w,gbitmap_get_bounds(framebuffer).size.w,gbitmap_get_bounds(graphic).size.h,gbitmap_get_bounds(framebuffer).size.h, gbitmap_get_bytes_per_row(graphic),gbitmap_get_bytes_per_row(framebuffer));
-
-            if (graphic == NULL)
-                {
-#ifdef DEBUG_LEVEL
-                    APP_LOG(APP_LOG_LEVEL_DEBUG, "GRAPHIC IS NULL!!");
-#endif
-                }
-            else
-                {
-
-                    height = gbitmap_get_bounds(graphic).size.h;
-
-                    uint8_t* bfstart=(uint8_t*)gbitmap_get_data(framebuffer);
-                    uint8_t* bitmapstart=(uint8_t*)gbitmap_get_data(graphic);
-                    if (bitmapstart == NULL)
-                        {
-                            APP_LOG(APP_LOG_LEVEL_WARNING, "bitmap start went to null!!");
-                            graphics_release_frame_buffer(ctx, framebuffer);
-                            global_lock = false;
-                            return;
-                        }
-                    if (bfstart == NULL)
-                        {
-                            APP_LOG(APP_LOG_LEVEL_WARNING, "framebuffer start went to null!!");
-                            graphics_release_frame_buffer(ctx, framebuffer);
-                            global_lock = false;
-                            return;
-                        }
-                    unsigned int fb_bytes_per_row = gbitmap_get_bytes_per_row(framebuffer);
-                    unsigned int gbitmap_bytes_per_row = gbitmap_get_bytes_per_row(graphic);
-
-                    bfstart += fb_bytes_per_row*34; // how far down screen to start
-
-                    for (int yindex =0; yindex < height; yindex++)
-                        {
-
-                            int fb_yoffset = yindex * fb_bytes_per_row;
-
-                            bfr = (uint8_t*)(bfstart+fb_yoffset);
-                            bitmap = (uint8_t*)(bitmapstart+(yindex * gbitmap_bytes_per_row));
-                            for ( unsigned int xindex = 0; xindex < gbitmap_bytes_per_row; xindex++)
-                                {
-
-                                    finalBits = breverse(*bitmap++) ^ *bfr;
-                                    *bfr++ = finalBits;
-                                    // APP_LOG(APP_LOG_LEVEL_DEBUG, "bfr: %0x, bitmsp: %0x, finalBits: %x", (unsigned int)bfr, (unsigned int)bitmap, finalBits );
-
-                                }
-                        }
-                }
-            graphics_release_frame_buffer(ctx, framebuffer);
-        }
-    global_lock = false;
-}
-#endif
 
 // Layer update procedure to draw date window outline
 static void date_outline_update_proc(Layer *layer, GContext *ctx) {
