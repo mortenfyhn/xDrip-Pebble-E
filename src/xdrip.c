@@ -1,4 +1,4 @@
-#include "pebble.h"
+#include <pebble.h>
 
 // IDE DEBUG ONLY
 //#define PBL_HEALTH
@@ -11,9 +11,10 @@ Make sure you set this to 0 before building a release. */
 // TEST_MODE: Display test data instead of real data
 #define TEST_MODE
 #define TEST_SHOW_TREND        // Display trend graph
-// #define TEST_SHOW_DELTA      // Display glucose delta value
-// #define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
+#define TEST_SHOW_DELTA      // Display glucose delta value
+#define TEST_SHOW_DELTA_UNITS // Display glucose delta units ("mmol/l")
 #define TEST_SHOW_SLOPE_ARROWS // Display slope arrows
+const int test_mode_minutes_ago = 58; // "59" takes most space, good for testing
 
 // DEBUG_OUTLINE: Display layer outlines for debugging
 // #define DEBUG_OUTLINE
@@ -27,7 +28,7 @@ Make sure you set this to 0 before building a release. */
 // #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)
 
 // Layout constants
-#define MARGIN 2
+#define EDGE_MARGIN 4
 
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
@@ -50,6 +51,7 @@ TextLayer *battlevel_layer = NULL;
 TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
 TextLayer *date_app_layer = NULL;
+static Layer *date_outline_layer = NULL;
 
 // DEBUG: Array to hold debug outline layers
 #ifdef DEBUG_OUTLINE
@@ -1293,8 +1295,7 @@ static void load_cgmtime() {
     // CODE START
 #ifdef TEST_MODE
     time_t temp_time = time(NULL);
-    // 59 minutes ago, takes most space (more than "now") so suitable for testing
-    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (59 * 60);
+    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (test_mode_minutes_ago * 60);
 #endif
 
     // initialize label buffer
@@ -2065,6 +2066,13 @@ static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx)
 }
 #endif
 
+// Layer update procedure to draw date window outline
+static void date_outline_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_draw_rect(ctx, bounds);
+}
+
 // DEBUG: Layer update procedure to draw outline
 #ifdef DEBUG_OUTLINE
 static void debug_outline_update_proc(Layer *layer, GContext *ctx) {
@@ -2146,7 +2154,7 @@ void window_load_cgm(Window *window_cgm) {
     const int bitham_42_cap_height = 30;
     const int icon_layer_kern = 6;
     const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
-    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, MARGIN, bitham_42_cap_height, bitham_42_cap_height));
+    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, EDGE_MARGIN, bitham_42_cap_height, bitham_42_cap_height));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
@@ -2189,7 +2197,7 @@ void window_load_cgm(Window *window_cgm) {
     delta_layer = text_layer_create(GRect(0, 36, 180, 50));
 #else
     const int delta_layer_width = 100;
-    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - MARGIN, 28, delta_layer_width, 24));
+    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - EDGE_MARGIN, 28, delta_layer_width, 24));
 #endif
 #ifdef PBL_COLOR
     text_layer_set_text_color(delta_layer, GColorDukeBlue);
@@ -2268,8 +2276,8 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, GColorDukeBlue);
     text_layer_set_background_color(bg_layer, GColorClear);
 #else
-    const int bg_layer_y_offset = -12 + MARGIN;
-    bg_layer = text_layer_create(GRect(MARGIN, bg_layer_y_offset, bg_layer_width, 42));
+    const int bg_layer_y_offset = -12 + EDGE_MARGIN;
+    bg_layer = text_layer_create(GRect(EDGE_MARGIN, bg_layer_y_offset, bg_layer_width, 42));
     text_layer_set_text_color(bg_layer, GColorBlack);
     text_layer_set_background_color(bg_layer, GColorClear);
 #endif
@@ -2288,7 +2296,7 @@ void window_load_cgm(Window *window_cgm) {
     //cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #ifdef PBL_BW
     // To the left, just beneath glucose value
-    cgmtime_layer = text_layer_create(GRect(MARGIN, 28, 34, 24));
+    cgmtime_layer = text_layer_create(GRect(EDGE_MARGIN, 28, 34, 24));
 #elif PBL_ROUND
     cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #else
@@ -2335,7 +2343,7 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(time_watch_layer, GColorWhite);
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #else
-    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - MARGIN; // Screen height - layer height - margin
+    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - EDGE_MARGIN; // Screen height - layer height - margin
     // No room for left edge margin
     time_watch_layer = text_layer_create(GRect(-1, time_layer_ypos, 126, 42));
     text_layer_set_text_color(time_watch_layer, GColorBlack);
@@ -2363,8 +2371,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_background_color(date_app_layer, GColorClear);
 #else  // PBL_BW
     const int date_app_width = 20;  // enough for two digits in gothic 24 bold
-    const int date_app_xpos = 134;  // todo compute properly
-    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, date_app_xpos, date_app_width, 24));
+    const int date_app_xpos = PBL_DISPLAY_WIDTH - date_app_width - EDGE_MARGIN;
+    const int date_app_ypos = 134;  // todo compute properly
+    date_app_layer = text_layer_create(GRect(date_app_xpos, date_app_ypos, date_app_width, 24));
     text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #endif
@@ -2374,6 +2383,27 @@ void window_load_cgm(Window *window_cgm) {
     layer_add_child(window_layer_cgm, text_layer_get_layer(date_app_layer));
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE) && defined(PBL_BW)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(date_app_layer));
+#endif
+
+    // Add date window outline (like a traditional watch date window)
+#ifdef PBL_BW
+    // Create a tight outline around the actual digits (not the full text layer)
+    // Adjust these values to position the outline perfectly around the digits
+    const int outline_width = 23;
+    const int outline_height = 18;
+    const int outline_x_offset = -1;  // offset from text layer x position
+    const int outline_y_offset = 8;  // offset from text layer y position for vertical centering
+
+    GRect date_frame = layer_get_frame(text_layer_get_layer(date_app_layer));
+    GRect outline_rect = GRect(
+        date_frame.origin.x + outline_x_offset,
+        date_frame.origin.y + outline_y_offset,
+        outline_width,
+        outline_height
+    );
+    date_outline_layer = layer_create(outline_rect);
+    layer_set_update_proc(date_outline_layer, date_outline_update_proc);
+    layer_add_child(window_layer_cgm, date_outline_layer);
 #endif
 
     // PHONE BATTERY LEVEL
@@ -2527,6 +2557,12 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&watch_battlevel_layer);
     destroy_null_TextLayer(&time_watch_layer);
     destroy_null_TextLayer(&date_app_layer);
+
+    // Destroy date outline layer
+    if (date_outline_layer != NULL) {
+        layer_destroy(date_outline_layer);
+        date_outline_layer = NULL;
+    }
 
     //destroy the face background layers.
     destroy_null_BitmapLayer(&lower_face_layer);
