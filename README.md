@@ -1,18 +1,72 @@
-# xDrip-Pebble
-Offline pebble watchface based on the Nightscout community version
-Note:  This current version is a modifcation of Kevin Lee's original cgm-pebble-offline.  It is intended for use with xDrip, not Nightscout.
+# xDrip-Pebble-E
 
-As such, it is based on the cgm-pebble version 6.0 code.
-There ARE NO EASTER EGGS, unless they are provided by xDrip.
-This watch face is meant for patients to use with xDrip, not for parents/carers.
-Ensure you enable notifications from xDrip in the Pebble App, and enable Third Party notifications, otherwise these will NOT come through on the pebble.
-Note:  The following settings are available from xDrip:
- * Display Trend - Turning on will display the BGL trend, sent as a Pebble format PNG.
- * Display Low Line - Display the low limit line on the trend.
- * Display High Line - Display the high limit line on the trend.
- * Trend Period - The period to display the trend (1 hour, 2 hour, 3 hour, 4 hour.  Beyond 4 hour is meaningless).
- * Display Delta - Display the delta (change) value.
- * Display Delta Units - Display mmol/l or mg/dl (as set in xDrip) units in the Delta.
- * Display Slope Arrows - Display the flat, 45 up/down, up/down, double up/down arrows like the Dexcom reader.
- * Special Value - A BGL value to display a message on the watch face (default 5.5 mmol/l or 99 mg/dl, but fully configurable so the people that prefer the 100 value can set that).
- * Text to Display - The text to display if the above special value is reached.  (default BAZINGA!)  Needs to be short.
+My Pebble xDrip watchface:
+
+* Simple layout with time of day, blood glucose, big glucose graph, and not much else
+* Only tested on the 2025 Pebble 2 Duo, but should be easy to adapt to other Pebbles (PRs welcome!)
+* For offline use, just CGM->phone->watch, no internet connectivity.
+* Based on the "Pebble Classic Trend Watchface" bundled in xDrip (see below)
+
+![Photo of Pebble 2 Duo with this watchface](https://github.com/user-attachments/assets/ff1a2a58-7295-430d-85ad-e902b1bafa0f)
+
+## Branches
+
+* `master`: Tidy and stable.
+* `dev`: The latest experiments, not stable.
+
+## Installation
+
+* Install xDrip
+    * At least [2025.12.07](https://github.com/NightscoutFoundation/xDrip/releases/tag/2025.12.07) to make it run
+    * Or [my fork](https://github.com/mortenfyhn/xDrip) for full compatibility (big graph, and graph tweaks)
+* Enable Pebble integration in xDrip
+* Select "Pebble Classic Trend Watchface", say no to the install prompt
+* Enable:
+    * Display Trend
+    * Display Low Line
+    * Display High Line
+    * Display Slope Arrows
+* [Build and install the watchface](https://developer.rebble.io/sdk/)
+    * Turn on "Use LAN developer connection" in Pebble app settings
+    * Turn on "Dev Connection" in the Pebble app settings for your watch
+    * `pebble build`
+    * `pebble install --phone IP`
+
+## Emulator
+
+Testing layout changes is much faster with the emulator:
+
+```sh
+pebble build
+pebble install --emulator diorite
+```
+
+Seems platform `flint` (new Pebble 2 Duo) isn't supported by the emulator yet but `diorite` (older Pebble 2) is pretty much the same.
+
+## Repo landscape
+
+There are several xDrip Pebble watchface repos that build on each other:
+
+| Repo | Description | Last Updated |
+|------|-------------|--------------|
+| [nightscout/cgm-pebble](https://github.com/nightscout/cgm-pebble) | Original watchface, fetches CGM data from Nightscout web servers | November 2015 |
+| [ktind/cgm-pebble-offline](https://github.com/ktind/cgm-pebble-offline) | Offline version of nightscout/cgm-pebble | December 2014 |
+| [jstevensog/xDrip-pebble](https://github.com/jstevensog/xDrip-pebble) | Offline xDrip watchface, based on nightscout/cgm-pebble v6.0 and ktind/cgm-pebble-offline | September 2015 |
+| [jstevensog/xDrip-Pebble-E](https://github.com/jstevensog/xDrip-Pebble-E) | Experimental variant (hence "-E") with glucose graph support, sent as PNG from xDrip | October 2017 (branch `new`: December 2018) |
+| [jamorham/xDrip-Pebble-E](https://github.com/jamorham/xDrip-Pebble-E) | Fork of jstevensog/xDrip-Pebble-E with improved hardware support (Pebble 2, Round) and stability fixes | November 2017 |
+| [mortenfyhn/xDrip-Pebble-E](https://github.com/mortenfyhn/xDrip-Pebble-E) | This fork, modified for Pebble 2 Duo (flint platform) compatibility with Rebble firmware | - |
+
+## xDrip's bundled watchfaces
+
+| Watchface name                   | Description                      | Bundled binary (in xDrip)        | Source                    |
+|----------------------------------|----------------------------------|----------------------------------|---------------------------|
+| Standard Watchface (old)         | Basic glucose display, no graph  | `xdrip_pebble.bin`               | jstevensog/xDrip-pebble   |
+| Color Trend Watchface            | Color display with graph         | `xdrip_pebble_classic_trend.bin` | jamorham/xDrip-Pebble-E   |
+| Pebble Classic Trend Watchface   | B&W display with graph           | `xdrip_pebble_classic_trend.bin` | jamorham/xDrip-Pebble-E   |
+| Pebble Trend Clay Version (test) | Graph display with Clay† support | `xdrip_pebble2.bin`              | jstevensog/xDrip-Pebble-E |
+
+† [Clay](https://developer.rebble.io/blog/2016/06/24/introducing-clay/)
+
+---
+
+Please correct me if I've made any mistakes.
