@@ -7,7 +7,14 @@
 Make sure you set this to 0 before building a release. */
 
 //#define DEBUG_LEVEL 1
-//#define TEST_MODE
+
+// TEST_MODE: Display test data instead of real data
+// #define TEST_MODE
+// #define TEST_SHOW_GRAPH
+// #define TEST_SHOW_DELTA
+// #define TEST_SHOW_DELTA_UNITS
+// #define TEST_SHOW_ARROWS
+
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
 
@@ -2049,7 +2056,7 @@ void window_load_cgm(Window *window_cgm) {
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
-#if defined(TEST_MODE)
+#if defined(TEST_MODE) && defined(TEST_SHOW_GRAPH)
     // Load test graph image
     bg_trend_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEST_GRAPH);
     if (bg_trend_bitmap != NULL) {
@@ -2073,9 +2080,6 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     text_layer_set_background_color(delta_layer, GColorClear);
     text_layer_set_font(delta_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
-#ifdef TEST_MODE
-    text_layer_set_text(delta_layer,"0.5mmol");
-#endif
 
 #ifdef PBL_BW
     text_layer_set_text_alignment(delta_layer, GTextAlignmentRight);
@@ -2276,8 +2280,13 @@ void window_load_cgm(Window *window_cgm) {
     // put " " (space) in bg field so logo continues to show
     // " " (space) also shows these are init values, not bad or null values
     snprintf(current_icon, 1, " ");
+
 #ifdef TEST_MODE
-    snprintf(current_icon, 2, "1");
+    #ifdef TEST_MODE_SHOW_ARROW
+        snprintf(current_icon, 2, "4"); // 4 = flat arrow
+    #else
+        snprintf(current_icon, 2, "0"); // 0 = no arrow
+    #endif
     specvalue_alert=false;
 #endif
     load_icon();
@@ -2288,7 +2297,13 @@ void window_load_cgm(Window *window_cgm) {
     current_app_time = 0;
     snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "LOAD");
 #ifdef TEST_MODE
-    snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.08");
+    #if defined(TEST_SHOW_DELTA) && defined(TEST_SHOW_DELTA_UNITS)
+        snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.5 mmol/l");
+    #elif defined(TEST_SHOW_DELTA)
+        snprintf(current_bg_delta, BGDELTA_MSGSTR_SIZE, "+0.5");
+    #else
+        current_bg_delta[0] = '\0'; // Don't show "LOADING..."
+    #endif
 #endif
     load_bg_delta();
     snprintf(last_battlevel, BATTLEVEL_MSGSTR_SIZE, " ");
