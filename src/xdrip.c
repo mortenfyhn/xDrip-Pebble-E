@@ -2155,11 +2155,8 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(iob_layer, GColorDukeBlue);
 #else
     text_layer_set_text_color(iob_layer, GColorBlack);
-#endif
     text_layer_set_background_color(iob_layer, GColorClear);
     text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-#if defined(TEST_MODE) && defined(TEST_SHOW_IOB)
-    text_layer_set_text(iob_layer, "2.5");
 #endif
 
 #ifdef PBL_BW
