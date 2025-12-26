@@ -121,6 +121,11 @@
           "file": "images/err.png",
           "name": "IMAGE_ERR",
           "type": "bitmap"
+        },
+        {
+          "file": "images/test-graph.png",
+          "name": "IMAGE_TEST_GRAPH",
+          "type": "bitmap"
         }
       ]
     },

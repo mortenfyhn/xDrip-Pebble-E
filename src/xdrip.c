@@ -2049,6 +2049,14 @@ void window_load_cgm(Window *window_cgm) {
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
+#if defined(TEST_MODE)
+    // Load test graph image
+    bg_trend_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEST_GRAPH);
+    if (bg_trend_bitmap != NULL) {
+        bitmap_layer_set_bitmap(bg_trend_layer, bg_trend_bitmap);
+    }
+#endif
+
     // DELTA BG
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Delta BG Text layer");
