@@ -2271,8 +2271,8 @@ void window_load_cgm(Window *window_cgm) {
     date_app_layer = text_layer_create(GRect(0, 124, 143, 26));
     text_layer_set_text_color(date_app_layer, GColorWhite);
     text_layer_set_background_color(date_app_layer, GColorClear);
-#else
-    const int date_app_width = 20;  // enough for two digits in gothic 24 bold
+#else  // PBL_BW
+    const int date_app_width = 22;  // Should fit two digits in Gothic 24 bold
     const int date_app_xpos = PBL_DISPLAY_WIDTH - date_app_width - EDGE_MARGIN;
     const int date_app_ypos = 132;  // todo compute properly
     date_app_layer = text_layer_create(GRect(date_app_xpos, date_app_ypos, date_app_width, 24));
@@ -2291,9 +2291,9 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef PBL_BW
     // Create a tight outline around the actual digits (not the full text layer)
     // Adjust these values to position the outline perfectly around the digits
-    const int outline_width = 23;
+    const int outline_width = date_app_width + 1;
     const int outline_height = 18;
-    const int outline_x_offset = -1;  // offset from text layer x position
+    const int outline_x_offset = 0;  // offset from text layer x position
     const int outline_y_offset = 8;  // offset from text layer y position for vertical centering
 
     GRect date_frame = layer_get_frame(text_layer_get_layer(date_app_layer));
