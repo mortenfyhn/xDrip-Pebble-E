@@ -15,6 +15,17 @@ Make sure you set this to 0 before building a release. */
 // #define TEST_SHOW_DELTA_UNITS
 // #define TEST_SHOW_ARROWS
 
+// DEBUG_OUTLINE: Display layer outlines for debugging
+// #define DEBUG_OUTLINE
+// #define DEBUG_OUTLINE_BG         // Blood glucose value
+// #define DEBUG_OUTLINE_ARROW      // Trend arrow
+// #define DEBUG_OUTLINE_DELTA      // BG delta/change
+// #define DEBUG_OUTLINE_GRAPH      // Trend graph
+// #define DEBUG_OUTLINE_TIMEAGO    // Time ago
+// #define DEBUG_OUTLINE_TIME       // Current time
+// #define DEBUG_OUTLINE_DATE       // Date
+// #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)
+
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
 
@@ -36,6 +47,12 @@ TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
 TextLayer *date_app_layer = NULL;
 
+// DEBUG: Array to hold debug outline layers
+#ifdef DEBUG_OUTLINE
+#define MAX_DEBUG_OUTLINES 10
+static Layer *debug_outline_layers[MAX_DEBUG_OUTLINES];
+static int debug_outline_count = 0;
+#endif
 
 BitmapLayer *icon_layer = NULL;
 BitmapLayer *bg_trend_layer = NULL;
@@ -2001,6 +2018,40 @@ static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx)
 }
 #endif
 
+// DEBUG: Layer update procedure to draw outline
+#ifdef DEBUG_OUTLINE
+static void debug_outline_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_draw_rect(ctx, bounds);
+}
+
+// Helper function to add debug outline to any layer (TextLayer or BitmapLayer)
+static void add_debug_outline(Layer *parent, Layer *target_layer) {
+    if (debug_outline_count >= MAX_DEBUG_OUTLINES) {
+        return; // Safety check
+    }
+
+    GRect bounds = layer_get_frame(target_layer);
+    Layer *outline_layer = layer_create(bounds);
+    layer_set_update_proc(outline_layer, debug_outline_update_proc);
+    layer_add_child(parent, outline_layer);
+
+    debug_outline_layers[debug_outline_count++] = outline_layer;
+}
+
+// Helper function to clean up all debug outlines
+static void destroy_debug_outlines(void) {
+    for (int i = 0; i < debug_outline_count; i++) {
+        if (debug_outline_layers[i] != NULL) {
+            layer_destroy(debug_outline_layers[i]);
+            debug_outline_layers[i] = NULL;
+        }
+    }
+    debug_outline_count = 0;
+}
+#endif
+
 void window_load_cgm(Window *window_cgm) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW LOAD");
 
@@ -2041,6 +2092,9 @@ void window_load_cgm(Window *window_cgm) {
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_ARROW) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
+#endif
 
     //create the bg_trend_layer
 #ifdef DEBUG_LEVEL
@@ -2091,6 +2145,9 @@ void window_load_cgm(Window *window_cgm) {
 #endif
 
     layer_add_child(window_layer_cgm, text_layer_get_layer(delta_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DELTA) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(delta_layer));
+#endif
 
     // MESSAGE
 #ifdef DEBUG_LEVEL
@@ -2130,6 +2187,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_font(bg_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(bg_layer, GTextAlignmentCenter);
     layer_add_child(window_layer_cgm, text_layer_get_layer(bg_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_BG) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(bg_layer));
+#endif
 
 
     // CGM TIME AGO READING
@@ -2156,10 +2216,16 @@ void window_load_cgm(Window *window_cgm) {
     //text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
     text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentCenter);
     layer_add_child(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIMEAGO) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
+#endif
 
 #ifdef PBL_BW
     // top layer on pebble classic
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_GRAPH)
+    add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
+#endif
 #endif
 
     // CURRENT ACTUAL TIME FROM WATCH
@@ -2182,6 +2248,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_font(time_watch_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(time_watch_layer, GTextAlignmentCenter);
     layer_add_child(window_layer_cgm, text_layer_get_layer(time_watch_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIME) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(time_watch_layer));
+#endif
 
     // CURRENT ACTUAL DATE FROM APP
 #ifdef DEBUG_LEVEL
@@ -2204,6 +2273,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_alignment(date_app_layer, GTextAlignmentCenter);
     draw_date_from_app();
     layer_add_child(window_layer_cgm, text_layer_get_layer(date_app_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(date_app_layer));
+#endif
 
     // PHONE BATTERY LEVEL
 #ifdef DEBUG_LEVEL
@@ -2355,6 +2427,11 @@ void window_unload_cgm(Window *window_cgm) {
 
     //destroy the background layer.
     destroy_null_BitmapLayer(&background_layer);
+
+    // DEBUG: Clean up all debug outline layers
+#ifdef DEBUG_OUTLINE
+    destroy_debug_outlines();
+#endif
 
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD OUT");
 } // end window_unload_cgm
