@@ -736,7 +736,7 @@ static void draw_date_from_app() {
         }
     }
 
-    draw_return = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%a %d %b", current_d_app);
+    draw_return = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%d", current_d_app);
     if (draw_return != 0) {
         text_layer_set_text(date_app_layer, date_app_text);
     }
