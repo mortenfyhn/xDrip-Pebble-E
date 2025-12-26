@@ -13,7 +13,9 @@
       "aplite",
       "basalt",
       "chalk",
-      "diorite"
+      "diorite",
+      "emery",
+      "flint"
     ],
     "enableMultiJS": false,
     "capabilities": [
