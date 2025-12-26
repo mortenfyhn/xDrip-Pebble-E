@@ -139,24 +139,9 @@ Data loading functions called from message handler:
 - `load_bg_delta()` - Update delta value (src/xdrip.c:1326)
 - `load_battlevel()` - Update battery levels (src/xdrip.c:1420)
 
-## Common Tasks
-
-Building for specific platform:
-```bash
-pebble build --platform basalt
-```
-
-Analyzing binary size:
-```bash
-pebble analyze-size
-```
-
-Installing and viewing logs:
-```bash
-pebble install --logs
-```
-
 ## Customization Guide
+
+**Target Hardware**: The user has a **Pebble 2 Duo** (black & white display, 144x168 pixels). When making changes, use the `PBL_BW` conditional compilation paths.
 
 The user is customizing this watchface for personal use with the following goals:
 - White background throughout
