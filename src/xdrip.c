@@ -2267,7 +2267,7 @@ void window_load_cgm(Window *window_cgm) {
     // " " (space) also shows these are init values, not bad or null values
     snprintf(current_icon, 1, " ");
 #ifdef TEST_MODE
-    snprintf(current_icon,1,"1");
+    snprintf(current_icon, 2, "1");
     specvalue_alert=false;
 #endif
     load_icon();
