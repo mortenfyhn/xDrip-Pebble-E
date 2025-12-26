@@ -32,8 +32,7 @@ TextLayer *date_app_layer = NULL;
 
 BitmapLayer *icon_layer = NULL;
 BitmapLayer *bg_trend_layer = NULL;
-BitmapLayer *upper_face_layer = NULL;
-BitmapLayer *lower_face_layer = NULL;
+BitmapLayer *background_layer = NULL;
 
 
 GBitmap *icon_bitmap = NULL;
@@ -2004,25 +2003,17 @@ void window_load_cgm(Window *window_cgm) {
 
     window_layer_cgm = window_get_root_layer(window_cgm);
 
-    //Paint the backgrounds for upper and lower halves of the watch face.
+    // Background color: All-white (previously upper half white, lower half black)
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Upper and Lower face panels");
 #endif
 #ifdef PBL_ROUND
-    upper_face_layer = bitmap_layer_create(GRect(0,0,180,83));
-    lower_face_layer = bitmap_layer_create(GRect(0,84,180,165));
+    background_layer = bitmap_layer_create(GRect(0,0,180,180));
 #else
-    upper_face_layer = bitmap_layer_create(GRect(0, 0, 144, 83));
-    lower_face_layer = bitmap_layer_create(GRect(0, 84, 144, 165));
+    background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
 #endif
-    bitmap_layer_set_background_color(upper_face_layer, GColorWhite);
-#ifdef PBL_COLOR
-    bitmap_layer_set_background_color(lower_face_layer, GColorDukeBlue);
-#else
-    bitmap_layer_set_background_color(lower_face_layer, GColorBlack);
-#endif
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(upper_face_layer));
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(lower_face_layer));
+    bitmap_layer_set_background_color(background_layer, GColorWhite);
+    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(background_layer));
 
     // ARROW OR SPECIAL VALUE
 #ifdef DEBUG_LEVEL
@@ -2336,9 +2327,8 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&time_watch_layer);
     destroy_null_TextLayer(&date_app_layer);
 
-    //destroy the face background layers.
-    destroy_null_BitmapLayer(&lower_face_layer);
-    destroy_null_BitmapLayer(&upper_face_layer);
+    //destroy the background layer.
+    destroy_null_BitmapLayer(&background_layer);
 
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD OUT");
 } // end window_unload_cgm
