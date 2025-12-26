@@ -2026,7 +2026,9 @@ void window_load_cgm(Window *window_cgm) {
     icon_layer = bitmap_layer_create(GRect(85, -9, 78, 49));
     bitmap_layer_set_compositing_mode(icon_layer, GCompOpSet);
 #else
-    icon_layer = bitmap_layer_create(GRect(85, -7, 78, 51));
+    // New B&W arrows are 30x30 px to better match the Bitham 42 font,
+    // which has approx 30 px cap height.
+    icon_layer = bitmap_layer_create(GRect(95, 5, 30, 30));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
