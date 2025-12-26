@@ -1266,7 +1266,8 @@ static void load_cgmtime() {
 
     // CODE START
 #ifdef TEST_MODE
-    current_cgm_time = time(NULL);
+    time_t temp_time = time(NULL);
+    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (0 * 60); // 0 minutes ago
 #endif
 
     // initialize label buffer
