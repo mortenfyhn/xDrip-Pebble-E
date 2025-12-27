@@ -14,6 +14,7 @@ Make sure you set this to 0 before building a release. */
 // #define TEST_SHOW_DELTA
 // #define TEST_SHOW_DELTA_UNITS
 // #define TEST_SHOW_ARROWS
+// #define TEST_SHOW_IOB
 const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 
 // DEBUG_OUTLINE: Display layer outlines for debugging
@@ -21,6 +22,7 @@ const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 // #define DEBUG_OUTLINE_BG         // Blood glucose value
 // #define DEBUG_OUTLINE_ARROW      // Trend arrow
 // #define DEBUG_OUTLINE_DELTA      // BG delta/change
+// #define DEBUG_OUTLINE_IOB        // Insulin on board
 // #define DEBUG_OUTLINE_GRAPH      // Trend graph
 // #define DEBUG_OUTLINE_TIMEAGO    // Time ago
 // #define DEBUG_OUTLINE_TIME       // Current time
@@ -2121,26 +2123,6 @@ void window_load_cgm(Window *window_cgm) {
     add_debug_outline(window_layer_cgm, text_layer_get_layer(delta_layer));
 #endif
 
-    // IOB (Insulin on Board)
-#ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW_LOAD: CREATE IOB LAYER");
-#endif
-#ifdef PBL_ROUND
-    iob_layer = text_layer_create(GRect(0, 126, 180, 20));
-#else
-    iob_layer = text_layer_create(GRect(0, 126, 143, 20));
-#endif
-#ifdef PBL_COLOR
-    text_layer_set_text_color(iob_layer, GColorBlack);
-#else
-    text_layer_set_text_color(iob_layer, GColorBlack);
-#endif
-    text_layer_set_background_color(iob_layer, GColorClear);
-    text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
-
-    layer_add_child(window_layer_cgm, text_layer_get_layer(iob_layer));
-
     // MESSAGE
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Message Text layer");
@@ -2158,6 +2140,40 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text(message_layer, "");
     layer_set_hidden((Layer *) message_layer, true);
     layer_add_child(window_layer_cgm, text_layer_get_layer(message_layer));
+
+    // IOB (Insulin on Board)
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW_LOAD: CREATE IOB LAYER");
+#endif
+#ifdef PBL_ROUND
+    iob_layer = text_layer_create(GRect(0, 36, 180, 50));
+#else
+    const int iob_layer_width = 100;
+    iob_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - iob_layer_width - EDGE_MARGIN, 28, iob_layer_width, 24));
+#endif
+#ifdef PBL_COLOR
+    text_layer_set_text_color(iob_layer, GColorDukeBlue);
+#else
+    text_layer_set_text_color(iob_layer, GColorBlack);
+#endif
+    text_layer_set_background_color(iob_layer, GColorClear);
+    text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+#if defined(TEST_MODE) && defined(TEST_SHOW_IOB)
+    text_layer_set_text(iob_layer, "2.5");
+#endif
+
+#ifdef PBL_BW
+    text_layer_set_text_alignment(iob_layer, GTextAlignmentRight);
+#elif PBL_ROUND
+    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
+#else
+    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
+#endif
+
+    layer_add_child(window_layer_cgm, text_layer_get_layer(iob_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_IOB) && defined(PBL_BW)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(iob_layer));
+#endif
 
     // BG
 #ifdef DEBUG_LEVEL
@@ -2398,6 +2414,9 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     load_bg_delta();
     current_iob[0] = '\0';
+#if defined(TEST_MODE) && defined(TEST_SHOW_IOB)
+    snprintf(current_iob, sizeof(current_iob), "2.5");
+#endif
     load_iob();
     snprintf(last_battlevel, BATTLEVEL_MSGSTR_SIZE, " ");
 
