@@ -26,6 +26,9 @@ Make sure you set this to 0 before building a release. */
 // #define DEBUG_OUTLINE_DATE       // Date
 // #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)
 
+// Layout constants
+#define MARGIN 2
+
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
 
@@ -2087,7 +2090,11 @@ void window_load_cgm(Window *window_cgm) {
 #else
     // New B&W arrows are 30x30 px to better match the Bitham 42 font,
     // which has approx 30 px cap height.
-    icon_layer = bitmap_layer_create(GRect(95, 5, 30, 30));
+
+    const int bitham_42_cap_height = 30;
+    const int icon_layer_kern = 6;
+    const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
+    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, MARGIN, bitham_42_cap_height, bitham_42_cap_height));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
@@ -2101,13 +2108,13 @@ void window_load_cgm(Window *window_cgm) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Trend Bitmap layer");
 #endif
 #ifdef PBL_PLATFORM_BASALT
-    bg_trend_layer = bitmap_layer_create(GRect(0,0,144,84));
+    bg_trend_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, 84));
     bitmap_layer_set_compositing_mode(bg_trend_layer, GCompOpSet);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
 #endif
 #ifdef PBL_BW
     // Layer size should match xDrip graph PNG size (144x100).
-    bg_trend_layer = bitmap_layer_create(GRect(0,24,144,100));
+    bg_trend_layer = bitmap_layer_create(GRect(0, 24, PBL_DISPLAY_WIDTH, 100));
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
@@ -2180,7 +2187,8 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, GColorDukeBlue);
     text_layer_set_background_color(bg_layer, GColorClear);
 #else
-    bg_layer = text_layer_create(GRect(0, -5, 95, 47));
+    const int bg_layer_y_offset = -12 + MARGIN;
+    bg_layer = text_layer_create(GRect(MARGIN, bg_layer_y_offset, bg_layer_width, 42));
     text_layer_set_text_color(bg_layer, GColorBlack);
     text_layer_set_background_color(bg_layer, GColorClear);
 #endif
@@ -2241,8 +2249,8 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(time_watch_layer, GColorWhite);
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #else
-    time_watch_layer = text_layer_create(GRect(0, 82, 143, 44));
-    text_layer_set_text_color(time_watch_layer, GColorWhite);
+    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - MARGIN;
+    time_watch_layer = text_layer_create(GRect(-1, time_layer_ypos, 126, 42));
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #endif
     text_layer_set_font(time_watch_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
