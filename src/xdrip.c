@@ -164,6 +164,7 @@ static bool old_state = false;
 
 // global constants for time durations
 static const uint8_t MINUTEAGO = 60;
+static const uint16_t FIVEMIN_AGO = 5 * 60;
 static const uint16_t HOURAGO = 60 * (60);
 static const uint32_t DAYAGO = 24 * (60 * 60);
 static const uint32_t WEEKAGO = 7 * (24 * 60 * 60);
@@ -1322,9 +1323,9 @@ static void load_cgmtime() {
 
         //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, GM TIME AGO LABEL IN: %s", cgm_label_buffer);
 
-        if (current_cgm_timeago < MINUTEAGO) {
-            cgm_timeago_diff = 0;
-            strncpy(formatted_cgm_timeago, "now", TIMEAGO_BUFFER_SIZE);
+        if (current_cgm_timeago < FIVEMIN_AGO) {
+            // Hide time ago if less than 5 min
+            strncpy(formatted_cgm_timeago, "", TIMEAGO_BUFFER_SIZE);
         } else if (current_cgm_timeago < HOURAGO) {
             cgm_timeago_diff = (current_cgm_timeago / MINUTEAGO);
             snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
