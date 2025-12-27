@@ -2077,7 +2077,7 @@ void window_load_cgm(Window *window_cgm) {
 #endif
 #ifdef PBL_BW
     // Layer size should match xDrip graph PNG size (144x100).
-    bg_trend_layer = bitmap_layer_create(GRect(0, 24, PBL_DISPLAY_WIDTH, 100));
+    bg_trend_layer = bitmap_layer_create(GRect(0, 34, PBL_DISPLAY_WIDTH, 100));
     layer_set_update_proc(bitmap_layer_get_layer(bg_trend_layer),bitmapLayerUpdate);
 #endif
 
