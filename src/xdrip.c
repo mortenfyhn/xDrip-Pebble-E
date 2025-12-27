@@ -2275,12 +2275,14 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(date_app_layer, GColorWhite);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #else
-    date_app_layer = text_layer_create(GRect(0, 120, 143, 29));
-    text_layer_set_text_color(date_app_layer, GColorWhite);
+    const int date_app_width = 20;  // enough for two digits in gothic 24 bold
+    const int date_app_xpos = 134;  // todo compute properly
+    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, date_app_xpos, date_app_width, 24));
+    text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #endif
     text_layer_set_font(date_app_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(date_app_layer, GTextAlignmentCenter);
+    text_layer_set_text_alignment(date_app_layer, GTextAlignmentRight);
     draw_date_from_app();
     layer_add_child(window_layer_cgm, text_layer_get_layer(date_app_layer));
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE) && defined(PBL_BW)
