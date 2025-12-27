@@ -2069,7 +2069,7 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef PBL_ROUND
     background_layer = bitmap_layer_create(GRect(0,0,180,180));
 #else
-    background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+    background_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, PBL_DISPLAY_HEIGHT));
 #endif
     bitmap_layer_set_background_color(background_layer, GColorWhite);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(background_layer));
