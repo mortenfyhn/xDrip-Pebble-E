@@ -2367,7 +2367,7 @@ void window_load_cgm(Window *window_cgm) {
     snprintf(current_icon, 1, " ");
 
 #ifdef TEST_MODE
-    #ifdef TEST_MODE_SHOW_ARROW
+    #ifdef TEST_SHOW_ARROW
         snprintf(current_icon, 2, "4"); // 4 = flat arrow
     #else
         snprintf(current_icon, 2, "0"); // 0 = no arrow

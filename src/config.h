@@ -4,7 +4,7 @@
 // #define TEST_SHOW_GRAPH
 // #define TEST_SHOW_DELTA
 // #define TEST_SHOW_DELTA_UNITS
-// #define TEST_SHOW_SLOPE_ARROWS
+// #define TEST_SHOW_ARROW
 // #define TEST_SHOW_IOB
 const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 
