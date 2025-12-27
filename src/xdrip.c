@@ -14,6 +14,7 @@ Make sure you set this to 0 before building a release. */
 // #define TEST_SHOW_DELTA
 // #define TEST_SHOW_DELTA_UNITS
 // #define TEST_SHOW_ARROWS
+const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 
 // DEBUG_OUTLINE: Display layer outlines for debugging
 // #define DEBUG_OUTLINE
@@ -1287,7 +1288,7 @@ static void load_cgmtime() {
     // CODE START
 #ifdef TEST_MODE
     time_t temp_time = time(NULL);
-    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (0 * 60); // 0 minutes ago
+    current_cgm_time = abs(temp_time + get_UTC_offset(localtime(&temp_time))) - (test_mode_minutes_ago * 60);
 #endif
 
     // initialize label buffer
