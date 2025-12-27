@@ -50,6 +50,7 @@ TextLayer *battlevel_layer = NULL;
 TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
 TextLayer *date_app_layer = NULL;
+static Layer *date_outline_layer = NULL;
 
 // DEBUG: Array to hold debug outline layers
 #ifdef DEBUG_OUTLINE
@@ -2022,6 +2023,13 @@ static void bitmapLayerUpdate(struct Layer *layer, GContext *ctx)
 }
 #endif
 
+// Layer update procedure to draw date window outline
+static void date_outline_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_draw_rect(ctx, bounds);
+}
+
 // DEBUG: Layer update procedure to draw outline
 #ifdef DEBUG_OUTLINE
 static void debug_outline_update_proc(Layer *layer, GContext *ctx) {
@@ -2291,6 +2299,27 @@ void window_load_cgm(Window *window_cgm) {
     add_debug_outline(window_layer_cgm, text_layer_get_layer(date_app_layer));
 #endif
 
+    // Add date window outline (like a traditional watch date window)
+#ifdef PBL_BW
+    // Create a tight outline around the actual digits (not the full text layer)
+    // Adjust these values to position the outline perfectly around the digits
+    const int outline_width = 23;
+    const int outline_height = 18;
+    const int outline_x_offset = -1;  // offset from text layer x position
+    const int outline_y_offset = 8;  // offset from text layer y position for vertical centering
+
+    GRect date_frame = layer_get_frame(text_layer_get_layer(date_app_layer));
+    GRect outline_rect = GRect(
+        date_frame.origin.x + outline_x_offset,
+        date_frame.origin.y + outline_y_offset,
+        outline_width,
+        outline_height
+    );
+    date_outline_layer = layer_create(outline_rect);
+    layer_set_update_proc(date_outline_layer, date_outline_update_proc);
+    layer_add_child(window_layer_cgm, date_outline_layer);
+#endif
+
     // PHONE BATTERY LEVEL
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Phone Battery Text layer");
@@ -2441,6 +2470,12 @@ void window_unload_cgm(Window *window_cgm) {
 
     //destroy the background layer.
     destroy_null_BitmapLayer(&background_layer);
+
+    // Destroy date outline layer
+    if (date_outline_layer != NULL) {
+        layer_destroy(date_outline_layer);
+        date_outline_layer = NULL;
+    }
 
     // DEBUG: Clean up all debug outline layers
 #ifdef DEBUG_OUTLINE
