@@ -2308,7 +2308,7 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     text_layer_set_font(battlevel_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
     text_layer_set_text_alignment(battlevel_layer, GTextAlignmentLeft);
-    layer_add_child(window_layer_cgm, text_layer_get_layer(battlevel_layer));
+    // layer_add_child(window_layer_cgm, text_layer_get_layer(battlevel_layer));
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "battlevel_layer; %s", text_layer_get_text(battlevel_layer));
 #endif
@@ -2356,7 +2356,7 @@ void window_load_cgm(Window *window_cgm) {
         text_layer_set_background_color(watch_battlevel_layer, GColorWhite);
     }
 #endif
-    layer_add_child(window_layer_cgm, text_layer_get_layer(watch_battlevel_layer));
+    // layer_add_child(window_layer_cgm, text_layer_get_layer(watch_battlevel_layer));
     battery_handler(charge_state);
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "watch_battlevel_layer; %s", text_layer_get_text(watch_battlevel_layer));
