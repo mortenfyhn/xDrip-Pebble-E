@@ -2207,7 +2207,8 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     //cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #ifdef PBL_BW
-    cgmtime_layer = text_layer_create(GRect(104, 58, 40, 24));
+    // To the left, just beneath glucose value
+    cgmtime_layer = text_layer_create(GRect(MARGIN, 28, 34, 24));
 #elif PBL_ROUND
     cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #else
@@ -2222,8 +2223,7 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_background_color(cgmtime_layer, GColorClear);
 #endif
     text_layer_set_font(cgmtime_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    //text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
-    text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentCenter);
+    text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
     layer_add_child(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIMEAGO) && defined(PBL_BW)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
