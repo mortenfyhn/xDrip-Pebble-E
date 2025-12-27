@@ -1469,8 +1469,8 @@ static void load_iob() {
         return;
     }
 
-    // Format and display IoB with unit
-    snprintf(formatted_iob, IOB_FORMATTED_SIZE, "IoB: %sU", current_iob);
+    // Format and display IoB
+    snprintf(formatted_iob, IOB_FORMATTED_SIZE, "IoB: %s", current_iob);
     text_layer_set_text(iob_layer, formatted_iob);
 
 #ifdef DEBUG_LEVEL
