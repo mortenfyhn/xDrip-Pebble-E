@@ -28,7 +28,7 @@ const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 // #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)
 
 // Layout constants
-#define MARGIN 2
+#define EDGE_MARGIN 4
 
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
@@ -2095,7 +2095,7 @@ void window_load_cgm(Window *window_cgm) {
     const int bitham_42_cap_height = 30;
     const int icon_layer_kern = 6;
     const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
-    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, MARGIN, bitham_42_cap_height, bitham_42_cap_height));
+    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, EDGE_MARGIN, bitham_42_cap_height, bitham_42_cap_height));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
@@ -2135,7 +2135,7 @@ void window_load_cgm(Window *window_cgm) {
     delta_layer = text_layer_create(GRect(0, 36, 180, 50));
 #else
     const int delta_layer_width = 100;
-    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - MARGIN, 28, delta_layer_width, 24));
+    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - EDGE_MARGIN, 28, delta_layer_width, 24));
 #endif
 #ifdef PBL_COLOR
     text_layer_set_text_color(delta_layer, GColorDukeBlue);
@@ -2189,8 +2189,8 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, GColorDukeBlue);
     text_layer_set_background_color(bg_layer, GColorClear);
 #else
-    const int bg_layer_y_offset = -12 + MARGIN;
-    bg_layer = text_layer_create(GRect(MARGIN, bg_layer_y_offset, bg_layer_width, 42));
+    const int bg_layer_y_offset = -12 + EDGE_MARGIN;
+    bg_layer = text_layer_create(GRect(EDGE_MARGIN, bg_layer_y_offset, bg_layer_width, 42));
     text_layer_set_text_color(bg_layer, GColorBlack);
     text_layer_set_background_color(bg_layer, GColorClear);
 #endif
@@ -2209,7 +2209,7 @@ void window_load_cgm(Window *window_cgm) {
     //cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #ifdef PBL_BW
     // To the left, just beneath glucose value
-    cgmtime_layer = text_layer_create(GRect(MARGIN, 28, 34, 24));
+    cgmtime_layer = text_layer_create(GRect(EDGE_MARGIN, 28, 34, 24));
 #elif PBL_ROUND
     cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
 #else
@@ -2251,7 +2251,7 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(time_watch_layer, GColorWhite);
     text_layer_set_background_color(time_watch_layer, GColorClear);
 #else
-    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - MARGIN;
+    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - EDGE_MARGIN;
     time_watch_layer = text_layer_create(GRect(-1, time_layer_ypos, 126, 42));
     text_layer_set_text_color(time_watch_layer, GColorBlack);
     text_layer_set_background_color(time_watch_layer, GColorClear);
@@ -2277,8 +2277,9 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_background_color(date_app_layer, GColorClear);
 #else
     const int date_app_width = 20;  // enough for two digits in gothic 24 bold
-    const int date_app_xpos = 134;  // todo compute properly
-    date_app_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - date_app_width - MARGIN, date_app_xpos, date_app_width, 24));
+    const int date_app_xpos = PBL_DISPLAY_WIDTH - date_app_width - EDGE_MARGIN;
+    const int date_app_ypos = 132;  // todo compute properly
+    date_app_layer = text_layer_create(GRect(date_app_xpos, date_app_ypos, date_app_width, 24));
     text_layer_set_text_color(date_app_layer, GColorBlack);
     text_layer_set_background_color(date_app_layer, GColorClear);
 #endif
