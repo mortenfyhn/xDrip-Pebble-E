@@ -1,3 +1,5 @@
+[![Build Status](https://fyhn.semaphoreci.com/badges/xDrip-Pebble-E/branches/master.svg?key=3e1c06da-a9ac-4071-ba4a-7bf6e74aac95)](https://fyhn.semaphoreci.com/projects/xDrip-Pebble-E)
+
 # xDrip-Pebble-E
 
 My Pebble xDrip watchface:
