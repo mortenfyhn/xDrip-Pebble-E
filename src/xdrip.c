@@ -2036,11 +2036,10 @@ void window_load_cgm(Window *window_cgm) {
 #else
     // New B&W arrows are 30x30 px to better match the Bitham 42 font,
     // which has approx 30 px cap height.
-
     const int bitham_42_cap_height = 30;
     const int icon_layer_kern = 6;
     const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
-    icon_layer = bitmap_layer_create(GRect(bg_layer_width + icon_layer_kern, EDGE_MARGIN, bitham_42_cap_height, bitham_42_cap_height));
+    icon_layer = bitmap_layer_create(GRect(EDGE_MARGIN + bg_layer_width + icon_layer_kern, EDGE_MARGIN, bitham_42_cap_height, bitham_42_cap_height));
 #endif
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
