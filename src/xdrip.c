@@ -28,7 +28,8 @@ TextLayer *bg_layer = NULL;
 TextLayer *cgmtime_layer = NULL;
 TextLayer *delta_layer = NULL;        // BG DELTA LAYER
 TextLayer *message_layer = NULL;    // MESSAGE LAYER
-TextLayer *iob_layer = NULL;        // IOB LAYER
+TextLayer *iob_layer = NULL;            // IOB LAYER
+TextLayer *dummy_layer = NULL;          // DUMMY LAYER - workaround for SDK bug
 TextLayer *battlevel_layer = NULL;
 TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
@@ -117,7 +118,7 @@ static char last_battlevel[4];
 static uint32_t current_cgm_time = 0;
 static uint32_t current_app_time = 0;
 static char current_bg_delta[14];
-static char current_iob[8];
+static uint16_t current_iob_milliunits = 0xFFFF; // 0xFFFF = no data received
 //static int converted_bgDelta = 0;
 
 // global BG snooze timer
@@ -248,7 +249,7 @@ static uint8_t alternator = 0;
 #define CGM_BLUETOOTH_KEY        111    // whether to vibrate no bluetooth
 #define CGM_COLLECT_HEALTH_KEY        112    // whether to log health data
 #define CGM_VIBE_KEY        11
-#define CGM_IOB_KEY        13        // TUPLE_CSTRING, IoB (Insulin on Board)
+#define CGM_IOB_KEY        13        // TUPLE_UINT16, IoB in milliunits
 #define CGM_SYNC_KEY        1000    // key pebble will use to request an update.
 #define PBL_PLATFORM        1001    // key pebble will use to send it's platform
 #define PBL_APP_VER        1002    // key pebble will use to send the face/app version.
@@ -1437,24 +1438,30 @@ static void load_bg_delta() {
 
 static void load_iob() {
 #ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "IOB FUNCTION START");
+    APP_LOG(APP_LOG_LEVEL_INFO, "IOB FUNCTION START, current_iob_milliunits=%d", current_iob_milliunits);
 #endif
 
     // CONSTANTS
 #define IOB_FORMATTED_SIZE 12
     // VARIABLES
-    static char formatted_iob[IOB_FORMATTED_SIZE];
+    static char formatted_iob[IOB_FORMATTED_SIZE] = "";
 
     // CODE START
 
-    // check if IoB string is empty
-    if (strcmp(current_iob, "") == 0) {
+    // check if IoB data not received yet
+    if (current_iob_milliunits == 0xFFFF) {
+#ifdef DEBUG_LEVEL
+        APP_LOG(APP_LOG_LEVEL_INFO, "IOB not received yet, clearing layer");
+#endif
         text_layer_set_text(iob_layer, "");
         return;
     }
 
-    // Format and display IoB
-    snprintf(formatted_iob, IOB_FORMATTED_SIZE, "IoB: %s", current_iob);
+    // Format and display IoB with one decimal place
+    const int iob_offset = current_iob_milliunits + 50;  // For correct rounding
+    const int iob_units = iob_offset / 1000;             // Integer part
+    const int iob_decimal = (iob_offset % 1000) / 100;   // First decimal place
+    snprintf(formatted_iob, IOB_FORMATTED_SIZE, "%d.%dU", iob_units, iob_decimal);
     text_layer_set_text(iob_layer, formatted_iob);
 
 #ifdef DEBUG_LEVEL
@@ -1673,11 +1680,10 @@ void inbox_received_handler_cgm(DictionaryIterator *iterator, void *context) {
                 load_bg_delta();
                 break; // break for CGM_DLTA_KEY
 
-            case CGM_IOB_KEY:;
-#define IOB_MSGSTR_SIZE 8
-                strncpy(current_iob, data->value->cstring, IOB_MSGSTR_SIZE);
+            case CGM_IOB_KEY:
+                current_iob_milliunits = data->value->uint16;
 #ifdef DEBUG_LEVEL
-                APP_LOG(APP_LOG_LEVEL_INFO, "SYNC TUPLE: IOB - %s", current_iob);
+                APP_LOG(APP_LOG_LEVEL_INFO, "SYNC TUPLE: IOB - %d milliunits", current_iob_milliunits);
 #endif
                 load_iob();
                 break; // break for CGM_IOB_KEY
@@ -2112,21 +2118,22 @@ void window_load_cgm(Window *window_cgm) {
 
     // IOB (Insulin on Board)
 #ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW_LOAD: CREATE IOB LAYER");
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating IOB Text layer");
 #endif
 #ifdef PBL_ROUND
     iob_layer = text_layer_create(GRect(0, 36, 180, 50));
 #else
     const int iob_layer_width = 100;
+    // Overlaps delta layer intentionally, don't use both at the same time, for now.
     iob_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - iob_layer_width - EDGE_MARGIN, 28, iob_layer_width, 24));
 #endif
 #ifdef PBL_COLOR
     text_layer_set_text_color(iob_layer, GColorDukeBlue);
 #else
     text_layer_set_text_color(iob_layer, GColorBlack);
+#endif
     text_layer_set_background_color(iob_layer, GColorClear);
     text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-#endif
 
 #ifdef PBL_BW
     text_layer_set_text_alignment(iob_layer, GTextAlignmentRight);
@@ -2140,6 +2147,10 @@ void window_load_cgm(Window *window_cgm) {
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_IOB) && defined(PBL_BW)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(iob_layer));
 #endif
+
+    // DUMMY LAYER - SDK bug workaround: IoB layer only renders if another layer is created after it
+    dummy_layer = text_layer_create(GRect(0, 0, 1, 1));
+    layer_set_hidden((Layer *) dummy_layer, true);
 
     // BG
 #ifdef DEBUG_LEVEL
@@ -2196,8 +2207,6 @@ void window_load_cgm(Window *window_cgm) {
 #endif
 
 #ifdef PBL_BW
-    // top layer on pebble classic
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_GRAPH)
     add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
 #endif
@@ -2379,9 +2388,9 @@ void window_load_cgm(Window *window_cgm) {
     #endif
 #endif
     load_bg_delta();
-    current_iob[0] = '\0';
+    current_iob_milliunits = 0xFFFF; // no data received yet
 #if defined(TEST_MODE) && defined(TEST_SHOW_IOB)
-    snprintf(current_iob, sizeof(current_iob), "2.5");
+    current_iob_milliunits = 1275;
 #endif
     load_iob();
     snprintf(last_battlevel, BATTLEVEL_MSGSTR_SIZE, " ");
@@ -2425,6 +2434,7 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&cgmtime_layer);
     destroy_null_TextLayer(&delta_layer);
     destroy_null_TextLayer(&iob_layer);
+    destroy_null_TextLayer(&dummy_layer);
     destroy_null_TextLayer(&message_layer);
     destroy_null_TextLayer(&battlevel_layer);
     destroy_null_TextLayer(&watch_battlevel_layer);
