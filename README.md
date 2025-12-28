@@ -9,11 +9,6 @@ My Pebble xDrip watchface:
 
 ![Photo of Pebble 2 Duo with this watchface](https://github.com/user-attachments/assets/ff1a2a58-7295-430d-85ad-e902b1bafa0f)
 
-## Branches
-
-* `master`: Tidy and stable.
-* `dev`: The latest experiments, not stable.
-
 ## Installation
 
 * Install xDrip
