@@ -705,6 +705,14 @@ void BT_timer_callback(void *data) {
 
 } // end BT_timer_callback
 
+// Format and display the date (day of month only)
+static void format_and_display_date(struct tm *time_info) {
+    size_t result = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%d", time_info);
+    if (result != 0) {
+        text_layer_set_text(date_app_layer, date_app_text);
+    }
+}
+
 static void draw_date_from_app() {
 
     // VARIABLES
@@ -726,10 +734,7 @@ static void draw_date_from_app() {
         }
     }
 
-    draw_return = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%d", current_d_app);
-    if (draw_return != 0) {
-        text_layer_set_text(date_app_layer, date_app_text);
-    }
+    format_and_display_date(current_d_app);
 
 } // end draw_date_from_app
 
@@ -1950,10 +1955,7 @@ void handle_second_tick_cgm(struct tm *tick_time_cgm, TimeUnits units_changed_cg
 #if DEBUG_LEVEL > 1
         APP_LOG(APP_LOG_LEVEL_INFO, "TICK TIME DAY CODE");
 #endif
-        tick_return_cgm = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%a %d", tick_time_cgm);
-        if (tick_return_cgm != 0) {
-            text_layer_set_text(date_app_layer, date_app_text);
-        }
+        format_and_display_date(tick_time_cgm);
     }
 
 } // end handle_minute_tick_cgm
