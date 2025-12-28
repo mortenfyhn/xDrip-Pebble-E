@@ -44,7 +44,6 @@ static int debug_outline_count = 0;
 
 BitmapLayer *icon_layer = NULL;
 BitmapLayer *bg_trend_layer = NULL;
-BitmapLayer *background_layer = NULL;
 
 
 GBitmap *icon_bitmap = NULL;
@@ -2013,18 +2012,6 @@ void window_load_cgm(Window *window_cgm) {
 
     window_layer_cgm = window_get_root_layer(window_cgm);
 
-    // Background color: All-white (previously upper half white, lower half black)
-#ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating Upper and Lower face panels");
-#endif
-#ifdef PBL_ROUND
-    background_layer = bitmap_layer_create(GRect(0,0,180,180));
-#else
-    background_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, PBL_DISPLAY_HEIGHT));
-#endif
-    bitmap_layer_set_background_color(background_layer, GColorWhite);
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(background_layer));
-
     // ARROW OR SPECIAL VALUE
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Arrow Bitmap layer");
@@ -2444,9 +2431,6 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&time_watch_layer);
     destroy_null_TextLayer(&date_app_layer);
 
-    //destroy the background layer.
-    destroy_null_BitmapLayer(&background_layer);
-
     // Destroy date outline layer
     if (date_outline_layer != NULL) {
         layer_destroy(date_outline_layer);
@@ -2480,7 +2464,7 @@ static void init_cgm(void) {
 
     // create the windows
     window_cgm = window_create();
-    window_set_background_color(window_cgm, GColorBlack);
+    window_set_background_color(window_cgm, GColorWhite);
     window_set_window_handlers(window_cgm, (WindowHandlers)
             {
                     .load = window_load_cgm,
