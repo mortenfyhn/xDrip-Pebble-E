@@ -2269,9 +2269,9 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef PBL_BW
     // Create a tight outline around the actual digits (not the full text layer)
     // Adjust these values to position the outline perfectly around the digits
-    const int outline_width = date_app_width + 1;
+    const int outline_width = date_app_width;
     const int outline_height = 18;
-    const int outline_x_offset = 0;  // offset from text layer x position
+    const int outline_x_offset = 1;  // offset from text layer x position
     const int outline_y_offset = 8;  // offset from text layer y position for vertical centering
 
     GRect date_frame = layer_get_frame(text_layer_get_layer(date_app_layer));
