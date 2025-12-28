@@ -2123,7 +2123,7 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef PBL_ROUND
     iob_layer = text_layer_create(GRect(0, 36, 180, 50));
 #else
-    const int iob_layer_width = 100;
+    const int iob_layer_width = 70; // Wide enough for "30.000U"
     // Overlaps delta layer intentionally, don't use both at the same time, for now.
     iob_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - iob_layer_width - EDGE_MARGIN, 28, iob_layer_width, 24));
 #endif
