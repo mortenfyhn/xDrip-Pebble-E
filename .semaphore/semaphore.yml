@@ -1,0 +1,19 @@
+version: v1.0
+name: Build Pipeline
+agent:
+  machine:
+    type: f1-standard-2
+    os_image: ubuntu2204
+  containers:
+    - name: main
+      image: rebble/pebble-sdk
+
+blocks:
+  - name: 'Build'
+    task:
+      jobs:
+        - name: 'Build'
+          commands:
+            - checkout
+            - pebble --version
+            - pebble build
