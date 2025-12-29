@@ -19,4 +19,3 @@ const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
 // #define DEBUG_OUTLINE_TIMEAGO    // Time ago
 // #define DEBUG_OUTLINE_TIME       // Current time
 // #define DEBUG_OUTLINE_DATE       // Date
-// #define DEBUG_OUTLINE_BATTERY    // Battery layers (currently hidden)

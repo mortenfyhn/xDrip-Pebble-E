@@ -33,7 +33,7 @@ TextLayer *dummy_layer = NULL;          // DUMMY LAYER - workaround for SDK bug
 TextLayer *battlevel_layer = NULL;
 TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
-TextLayer *date_app_layer = NULL;
+TextLayer *date_layer = NULL;
 static Layer *date_outline_layer = NULL;
 
 // DEBUG: Array to hold debug outline layers
@@ -53,7 +53,7 @@ GBitmap *specialvalue_bitmap = NULL;
 GBitmap *bg_trend_bitmap = NULL;
 
 static char time_watch_text[] = "00:00";
-static char date_app_text[] = "Wed 13 Jan";
+static char date_text[] = "Wed 13 Jan";
 
 // variables for AppSync
 AppSync sync_cgm;
@@ -153,7 +153,7 @@ static const uint32_t WEEKAGO = 7 * (24 * 60 * 60);
 static const uint16_t MS_IN_A_SECOND = 1000;
 
 // Constants for string buffers
-// If add month to date, buffer size needs to increase to 12; also need to reformat date_app_text init string
+// If add month to date, buffer size needs to increase to 12; also need to reformat date_text init string
 static const uint8_t TIME_TEXTBUFF_SIZE = 6;
 static const uint8_t DATE_TEXTBUFF_SIZE = 11;
 static const uint8_t LABEL_BUFFER_SIZE = 6;
@@ -682,7 +682,7 @@ void handle_bluetooth_cgm(bool bt_connected) {
             BT_timer_pop = false;
         }
 #ifdef PBL_COLOR
-        text_layer_set_text_color(delta_layer, GColorBlack);
+        text_layer_set_text_color(delta_layer, GColorDukeBlue);
 #endif
 
     }
@@ -707,9 +707,9 @@ void BT_timer_callback(void *data) {
 
 // Format and display the date (day of month only)
 static void format_and_display_date(struct tm *time_info) {
-    size_t result = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%d", time_info);
+    size_t result = strftime(date_text, DATE_TEXTBUFF_SIZE, "%d", time_info);
     if (result != 0) {
-        text_layer_set_text(date_app_layer, date_app_text);
+        text_layer_set_text(date_layer, date_text);
     }
 }
 
@@ -1428,7 +1428,7 @@ static void load_bg_delta() {
 
     text_layer_set_text(delta_layer, formatted_bg_delta);
 #ifdef PBL_COLOR
-    text_layer_set_text_color(delta_layer,GColorBlack);
+    text_layer_set_text_color(delta_layer,GColorDukeBlue);
 #endif
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "LOAD_BG_DELTA: delta_layer is \"%s\"", text_layer_get_text(delta_layer));
@@ -1970,7 +1970,7 @@ void handle_second_tick_cgm(struct tm *tick_time_cgm, TimeUnits units_changed_cg
 // Layer update procedure to draw date window outline
 static void date_outline_update_proc(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
-    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_context_set_stroke_color(ctx, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     graphics_draw_rect(ctx, bounds);
 }
 
@@ -2015,90 +2015,127 @@ void window_load_cgm(Window *window_cgm) {
     Layer *window_layer_cgm = NULL;
 
     // CODE START
-
     window_layer_cgm = window_get_root_layer(window_cgm);
 
-    // ARROW OR SPECIAL VALUE
+    // LAYOUT CONSTANTS
+    const int font_24_height = 24;
+    const int font_42_height = 42;
+    const int bitham_42_cap_height = 30;
+
+    // LAYER: BG
+    // Shows current blood glucose as text, like "10.0"
+    //
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Text layer");
+#endif
+    const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
+    const int bg_layer_height = font_42_height;
+    const int bg_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, (PBL_DISPLAY_WIDTH - bg_layer_width) / 2);
+    const int bg_layer_y = EDGE_MARGIN - PBL_IF_RECT_ELSE(12, 6);
+    bg_layer = text_layer_create(GRect(bg_layer_x, bg_layer_y, bg_layer_width, bg_layer_height));
+    text_layer_set_text_color(bg_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
+    text_layer_set_background_color(bg_layer, GColorClear);
+    text_layer_set_font(bg_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+    text_layer_set_text_alignment(bg_layer, GTextAlignmentCenter);
+    layer_add_child(window_layer_cgm, text_layer_get_layer(bg_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_BG)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(bg_layer));
+#endif
+
+    // LAYER: ICON
+    // Shows BG trend arrow or other icons like xDrip logo, broken antenna, etc
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Arrow Bitmap layer");
 #endif
-#ifdef PBL_ROUND
-    icon_layer = bitmap_layer_create(GRect(120, 30, 78, 50));
-    bitmap_layer_set_compositing_mode(icon_layer, GCompOpSet);
-#elif PBL_COLOR
-    icon_layer = bitmap_layer_create(GRect(85, -9, 78, 49));
-    bitmap_layer_set_compositing_mode(icon_layer, GCompOpSet);
-#else
-    // New B&W arrows are 30x30 px to better match the Bitham 42 font,
-    // which has approx 30 px cap height.
-    const int bitham_42_cap_height = 30;
     const int icon_layer_kern = 6;
-    const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
-    icon_layer = bitmap_layer_create(GRect(EDGE_MARGIN + bg_layer_width + icon_layer_kern, EDGE_MARGIN, bitham_42_cap_height, bitham_42_cap_height));
+    // New B&W arrows are 30x30 px to better match the Bitham 42 font cap height.
+    const int icon_layer_width = PBL_IF_BW_ELSE(bitham_42_cap_height, 60);
+    const int icon_layer_height = PBL_IF_BW_ELSE(bitham_42_cap_height, 60);
+#if defined(PBL_RECT) && defined(PBL_BW)
+    const int icon_layer_x = EDGE_MARGIN + bg_layer_width + icon_layer_kern;
+    const int icon_layer_y = EDGE_MARGIN;
+#elif defined(PBL_RECT) && defined(PBL_COLOR)
+    const int icon_layer_x = EDGE_MARGIN + bg_layer_width + icon_layer_kern - 10;
+    const int icon_layer_y = -10;
+#elif defined(PBL_ROUND)
+    const int icon_layer_x = (PBL_DISPLAY_WIDTH - icon_layer_width) / 2;
+    const int icon_layer_y = 34;
 #endif
+    icon_layer = bitmap_layer_create(GRect(icon_layer_x, icon_layer_y, icon_layer_width, icon_layer_height));
+    bitmap_layer_set_compositing_mode(icon_layer, GCompOpSet);
     bitmap_layer_set_alignment(icon_layer, GAlignTopLeft);
     bitmap_layer_set_background_color(icon_layer, GColorClear);
     layer_add_child(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_ARROW) && defined(PBL_BW)
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_ARROW)
     add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(icon_layer));
 #endif
 
-    //create the bg_trend_layer
+    // LAYER: CGM TIME AGO READING
+    // Shows how old the current BG value is, like "3m"
+    //
 #ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Trend Bitmap layer");
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating CGM Time Ago Bitmap layer");
 #endif
-#ifdef PBL_PLATFORM_BASALT
-    bg_trend_layer = bitmap_layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, 84));
-    bitmap_layer_set_compositing_mode(bg_trend_layer, GCompOpSet);
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
-#endif
-#ifdef PBL_BW
-    // Layer size should match xDrip graph PNG size (144x100).
-    bg_trend_layer = bitmap_layer_create(GRect(0, 34, PBL_DISPLAY_WIDTH, 100));
-    bitmap_layer_set_compositing_mode(bg_trend_layer, GCompOpSet);
-    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
-#endif
-
-#if defined(TEST_MODE) && defined(TEST_SHOW_GRAPH)
-    // Load test graph image
-    bg_trend_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEST_GRAPH);
-    if (bg_trend_bitmap != NULL) {
-        bitmap_layer_set_bitmap(bg_trend_layer, bg_trend_bitmap);
-    }
+    const int cgmtime_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int cgmtime_layer_y = bg_layer_y + 36;
+    const int cgmtime_layer_width = 34;
+    const int cgmtime_layer_height = font_24_height;
+    cgmtime_layer = text_layer_create(GRect(cgmtime_layer_x, cgmtime_layer_y, cgmtime_layer_width, cgmtime_layer_height));
+    text_layer_set_text_color(cgmtime_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
+    text_layer_set_font(cgmtime_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
+    text_layer_set_background_color(cgmtime_layer, GColorClear);
+    layer_add_child(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIMEAGO)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
 #endif
 
-    // DELTA BG
+    // LAYER: DELTA BG
+    // Shows change in BG since last reading, like "+.5 mmol/l"
+    // or system status, like "LOADING...", "NO BLUETOOTH", etc
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Delta BG Text layer");
 #endif
-#ifdef PBL_ROUND
-    delta_layer = text_layer_create(GRect(0, 36, 180, 50));
-#else
     const int delta_layer_width = 100;
-    delta_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - delta_layer_width - EDGE_MARGIN, 28, delta_layer_width, 24));
-#endif
-#ifdef PBL_COLOR
-    text_layer_set_text_color(delta_layer, GColorDukeBlue);
-#else
-    text_layer_set_text_color(delta_layer, GColorBlack);
-#endif
+    const int delta_layer_height = font_24_height;
+    const int delta_layer_x = PBL_DISPLAY_WIDTH - delta_layer_width - PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int delta_layer_y = bg_layer_y + 36;
+    delta_layer = text_layer_create(GRect(delta_layer_x, delta_layer_y, delta_layer_width, delta_layer_height));
+    text_layer_set_text_color(delta_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(delta_layer, GColorClear);
     text_layer_set_font(delta_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-
-#ifdef PBL_BW
-    text_layer_set_text_alignment(delta_layer, GTextAlignmentRight);
-#elif PBL_ROUND
-    text_layer_set_text_alignment(delta_layer, GTextAlignmentCenter);
-#else
-    text_layer_set_text_alignment(delta_layer, GTextAlignmentCenter);
-#endif
-
+    text_layer_set_text_alignment(delta_layer, PBL_IF_RECT_ELSE(GTextAlignmentRight, GTextAlignmentCenter));
     layer_add_child(window_layer_cgm, text_layer_get_layer(delta_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DELTA) && defined(PBL_BW)
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DELTA)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(delta_layer));
 #endif
 
-    // MESSAGE
+    // LAYER: IOB
+    // Shows insulin on board, like "1.3U"
+    //
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating IOB Text layer");
+#endif
+    // Overlaps delta layer intentionally, don't use both at the same time, for now.
+    const int iob_layer_width = 70; // Wide enough for "30.000U"
+    const int iob_layer_height = font_24_height;
+    const int iob_layer_x = PBL_DISPLAY_WIDTH - iob_layer_width - PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int iob_layer_y = bg_layer_y + 36;
+    iob_layer = text_layer_create(GRect(iob_layer_x, iob_layer_y, iob_layer_width, iob_layer_height));
+    text_layer_set_text_color(iob_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
+    text_layer_set_background_color(iob_layer, GColorClear);
+    text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(iob_layer, GTextAlignmentRight);
+    layer_add_child(window_layer_cgm, text_layer_get_layer(iob_layer));
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_IOB)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(iob_layer));
+#endif
+
+    // LAYER: MESSAGE
+    // Shows custom message (default "bazinga" when BG hits a specific value)
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Message Text layer");
 #endif
@@ -2116,177 +2153,88 @@ void window_load_cgm(Window *window_cgm) {
     layer_set_hidden((Layer *) message_layer, true);
     layer_add_child(window_layer_cgm, text_layer_get_layer(message_layer));
 
-    // IOB (Insulin on Board)
+    // LAYER: BG TREND GRAPH
+    // Shows the PNG BG graph sent from xDrip
+    //
 #ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating IOB Text layer");
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Trend Bitmap layer");
 #endif
-#ifdef PBL_ROUND
-    iob_layer = text_layer_create(GRect(0, 36, 180, 50));
-#else
-    const int iob_layer_width = 70; // Wide enough for "30.000U"
-    // Overlaps delta layer intentionally, don't use both at the same time, for now.
-    iob_layer = text_layer_create(GRect(PBL_DISPLAY_WIDTH - iob_layer_width - EDGE_MARGIN, 28, iob_layer_width, 24));
+    // Layer size should match xDrip graph PNG size (144x100).
+    const int bg_graph_layer_x = 0;
+    const int bg_graph_layer_y = 34;
+    const int bg_graph_layer_width = PBL_DISPLAY_WIDTH;
+    const int bg_graph_layer_height = 100;
+    bg_trend_layer = bitmap_layer_create(GRect(bg_graph_layer_x, bg_graph_layer_y, bg_graph_layer_width, bg_graph_layer_height));
+    bitmap_layer_set_compositing_mode(bg_trend_layer, GCompOpSet);
+    layer_add_child(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
+#if defined(TEST_MODE) && defined(TEST_SHOW_GRAPH)
+    bg_trend_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEST_GRAPH);
+    if (bg_trend_bitmap != NULL) {
+        bitmap_layer_set_bitmap(bg_trend_layer, bg_trend_bitmap);
+    }
 #endif
-#ifdef PBL_COLOR
-    text_layer_set_text_color(iob_layer, GColorDukeBlue);
-#else
-    text_layer_set_text_color(iob_layer, GColorBlack);
-#endif
-    text_layer_set_background_color(iob_layer, GColorClear);
-    text_layer_set_font(iob_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-
-#ifdef PBL_BW
-    text_layer_set_text_alignment(iob_layer, GTextAlignmentRight);
-#elif PBL_ROUND
-    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
-#else
-    text_layer_set_text_alignment(iob_layer, GTextAlignmentCenter);
-#endif
-
-    layer_add_child(window_layer_cgm, text_layer_get_layer(iob_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_IOB) && defined(PBL_BW)
-    add_debug_outline(window_layer_cgm, text_layer_get_layer(iob_layer));
-#endif
-
-    // DUMMY LAYER - SDK bug workaround: IoB layer only renders if another layer is created after it
-    dummy_layer = text_layer_create(GRect(0, 0, 1, 1));
-    layer_set_hidden((Layer *) dummy_layer, true);
-
-    // BG
-#ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Text layer");
-#endif
-#ifdef PBL_ROUND
-    bg_layer = text_layer_create(GRect(0, -7, 180, 47));
-    text_layer_set_text_color(bg_layer, GColorDukeBlue);
-    text_layer_set_background_color(bg_layer, GColorClear);
-#elif PBL_COLOR
-    bg_layer = text_layer_create(GRect(0, -5, 95, 42));
-    text_layer_set_text_color(bg_layer, GColorDukeBlue);
-    text_layer_set_background_color(bg_layer, GColorClear);
-#else
-    const int bg_layer_y_offset = -12 + EDGE_MARGIN;
-    bg_layer = text_layer_create(GRect(EDGE_MARGIN, bg_layer_y_offset, bg_layer_width, 42));
-    text_layer_set_text_color(bg_layer, GColorBlack);
-    text_layer_set_background_color(bg_layer, GColorClear);
-#endif
-    text_layer_set_font(bg_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-    text_layer_set_text_alignment(bg_layer, GTextAlignmentCenter);
-    layer_add_child(window_layer_cgm, text_layer_get_layer(bg_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_BG) && defined(PBL_BW)
-    add_debug_outline(window_layer_cgm, text_layer_get_layer(bg_layer));
-#endif
-
-
-    // CGM TIME AGO READING
-#ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating CGM Time Ago Bitmap layer");
-#endif
-    //cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
-#ifdef PBL_BW
-    // To the left, just beneath glucose value
-    cgmtime_layer = text_layer_create(GRect(EDGE_MARGIN, 28, 34, 24));
-#elif PBL_ROUND
-    cgmtime_layer = text_layer_create(GRect(5, 58, 40, 24));
-#else
-    cgmtime_layer = text_layer_create(GRect(52, 58, 40, 24));
-#endif
-
-#ifdef PBL_COLOR
-    text_layer_set_text_color(cgmtime_layer, GColorDukeBlue);
-    text_layer_set_background_color(cgmtime_layer, GColorClear);
-#else
-    text_layer_set_text_color(cgmtime_layer, GColorBlack);
-    text_layer_set_background_color(cgmtime_layer, GColorClear);
-#endif
-    text_layer_set_font(cgmtime_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(cgmtime_layer, GTextAlignmentLeft);
-    layer_add_child(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIMEAGO) && defined(PBL_BW)
-    add_debug_outline(window_layer_cgm, text_layer_get_layer(cgmtime_layer));
-#endif
-
-#ifdef PBL_BW
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_GRAPH)
     add_debug_outline(window_layer_cgm, bitmap_layer_get_layer(bg_trend_layer));
 #endif
-#endif
 
-    // CURRENT ACTUAL TIME FROM WATCH
+    // LAYER: CURRENT ACTUAL TIME FROM WATCH
+    // Shows the time of day, like "10:19"
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Time Text layer");
 #endif
-#ifdef PBL_ROUND
-    time_watch_layer = text_layer_create(GRect(18, 82, 143, 44));
-    text_layer_set_text_color(time_watch_layer, GColorWhite);
+    const int time_layer_width = 126;
+    const int time_layer_height = font_42_height;
+    const int time_layer_x = PBL_IF_RECT_ELSE(-1, (PBL_DISPLAY_WIDTH - time_layer_width) / 2);
+    const int time_layer_y = PBL_DISPLAY_HEIGHT - font_42_height - EDGE_MARGIN - PBL_IF_ROUND_ELSE(12, 0);
+    time_watch_layer = text_layer_create(GRect(time_layer_x, time_layer_y, time_layer_width, time_layer_height));
+    text_layer_set_text_color(time_watch_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(time_watch_layer, GColorClear);
-#elif PBL_COLOR
-    time_watch_layer = text_layer_create(GRect(0, 82, 143, 44));
-    text_layer_set_text_color(time_watch_layer, GColorWhite);
-    text_layer_set_background_color(time_watch_layer, GColorClear);
-#else
-    const int time_layer_ypos = PBL_DISPLAY_HEIGHT - 42 - EDGE_MARGIN;
-    time_watch_layer = text_layer_create(GRect(-1, time_layer_ypos, 126, 42));
-    text_layer_set_text_color(time_watch_layer, GColorBlack);
-    text_layer_set_background_color(time_watch_layer, GColorClear);
-#endif
     text_layer_set_font(time_watch_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(time_watch_layer, GTextAlignmentCenter);
     layer_add_child(window_layer_cgm, text_layer_get_layer(time_watch_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIME) && defined(PBL_BW)
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_TIME)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(time_watch_layer));
 #endif
 
-    // CURRENT ACTUAL DATE FROM APP
+    // LAYER: CURRENT ACTUAL DATE FROM APP
+    // Show the day of month, like "30" with an outline to imitate a date window
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Date Text layer");
 #endif
-#ifdef PBL_ROUND
-    date_app_layer = text_layer_create(GRect(18, 124, 143, 26));
-    text_layer_set_text_color(date_app_layer, GColorWhite);
-    text_layer_set_background_color(date_app_layer, GColorClear);
-#elif PBL_COLOR
-    date_app_layer = text_layer_create(GRect(0, 124, 143, 26));
-    text_layer_set_text_color(date_app_layer, GColorWhite);
-    text_layer_set_background_color(date_app_layer, GColorClear);
-#else  // PBL_BW
-    const int date_app_width = 22;  // Should fit two digits in Gothic 24 bold
-    const int date_app_xpos = PBL_DISPLAY_WIDTH - date_app_width - EDGE_MARGIN;
-    const int date_app_ypos = 132;  // todo compute properly
-    date_app_layer = text_layer_create(GRect(date_app_xpos, date_app_ypos, date_app_width, 24));
-    text_layer_set_text_color(date_app_layer, GColorBlack);
-    text_layer_set_background_color(date_app_layer, GColorClear);
-#endif
-    text_layer_set_font(date_app_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(date_app_layer, GTextAlignmentRight);
+    const int date_layer_width = 22; // Should fit two digits in Gothic 24 bold
+    const int date_layer_height = font_24_height;
+    const int date_layer_x = PBL_DISPLAY_WIDTH - date_layer_width - EDGE_MARGIN;
+    const int date_layer_y = 132;
+    date_layer = text_layer_create(GRect(date_layer_x, date_layer_y, date_layer_width, date_layer_height));
+    text_layer_set_text_color(date_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
+    text_layer_set_background_color(date_layer, GColorClear);
+    text_layer_set_font(date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(date_layer, GTextAlignmentRight);
     draw_date_from_app();
-    layer_add_child(window_layer_cgm, text_layer_get_layer(date_app_layer));
-#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE) && defined(PBL_BW)
-    add_debug_outline(window_layer_cgm, text_layer_get_layer(date_app_layer));
-#endif
-
-    // Add date window outline (like a traditional watch date window)
-#ifdef PBL_BW
-    // Create a tight outline around the actual digits (not the full text layer)
-    // Adjust these values to position the outline perfectly around the digits
-    const int outline_width = date_app_width;
+    // Add date window outline
+    const int outline_width = date_layer_width;
     const int outline_height = 18;
-    const int outline_x_offset = 1;  // offset from text layer x position
-    const int outline_y_offset = 8;  // offset from text layer y position for vertical centering
-
-    GRect date_frame = layer_get_frame(text_layer_get_layer(date_app_layer));
+    const int outline_x_offset = 1;  // offset from date layer x position
+    const int outline_y_offset = 8;  // offset from date layer y position
+    GRect date_frame = layer_get_frame(text_layer_get_layer(date_layer));
     GRect outline_rect = GRect(
-        date_frame.origin.x + outline_x_offset,
-        date_frame.origin.y + outline_y_offset,
-        outline_width,
-        outline_height
-    );
+        date_frame.origin.x + outline_x_offset, date_frame.origin.y + outline_y_offset,
+        outline_width, outline_height);
     date_outline_layer = layer_create(outline_rect);
     layer_set_update_proc(date_outline_layer, date_outline_update_proc);
+#if PBL_RECT
+    // Doesn't really fit on round watch
+    layer_add_child(window_layer_cgm, text_layer_get_layer(date_layer));
     layer_add_child(window_layer_cgm, date_outline_layer);
 #endif
+#if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(date_layer));
+#endif
 
-    // PHONE BATTERY LEVEL
+    // LAYER: PHONE BATTERY LEVEL
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Phone Battery Text layer");
 #endif
@@ -2310,8 +2258,8 @@ void window_load_cgm(Window *window_cgm) {
     APP_LOG(APP_LOG_LEVEL_INFO, "battlevel_layer; %s", text_layer_get_text(battlevel_layer));
 #endif
 
-
-    // WATCH BATTERY LEVEL
+    // LAYER: WATCH BATTERY LEVEL
+    //
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Battery Text layer");
 #endif
@@ -2434,12 +2382,11 @@ void window_unload_cgm(Window *window_cgm) {
     destroy_null_TextLayer(&cgmtime_layer);
     destroy_null_TextLayer(&delta_layer);
     destroy_null_TextLayer(&iob_layer);
-    destroy_null_TextLayer(&dummy_layer);
     destroy_null_TextLayer(&message_layer);
     destroy_null_TextLayer(&battlevel_layer);
     destroy_null_TextLayer(&watch_battlevel_layer);
     destroy_null_TextLayer(&time_watch_layer);
-    destroy_null_TextLayer(&date_app_layer);
+    destroy_null_TextLayer(&date_layer);
 
     // Destroy date outline layer
     if (date_outline_layer != NULL) {
