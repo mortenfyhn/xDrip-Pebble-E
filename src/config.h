@@ -7,6 +7,7 @@
 // #define TEST_SHOW_ARROW
 // #define TEST_SHOW_IOB
 const int test_mode_minutes_ago = 59; // "59" takes most space, good for testing
+const char* test_mode_bg = "10.0";
 
 // DEBUG_OUTLINE: Display layer outlines for debugging
 //

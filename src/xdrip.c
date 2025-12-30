@@ -1132,7 +1132,7 @@ static void load_bg() {
 #endif
 
 #ifdef TEST_MODE
-    snprintf(last_bg,sizeof(last_bg),"%s","10.0");
+    snprintf(last_bg,sizeof(last_bg),"%s",test_mode_bg);
 #endif
     // BG parse, check snooze, and set text
 
