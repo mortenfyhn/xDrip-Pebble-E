@@ -22,18 +22,18 @@ const uint8_t PLATFORM = 0;
 const uint8_t PLATFORM = 1;
 #endif
 
-Window *window_cgm = NULL;
+static Window *window_cgm = NULL;
 
-TextLayer *bg_layer = NULL;
-TextLayer *cgmtime_layer = NULL;
-TextLayer *delta_layer = NULL;        // BG DELTA LAYER
-TextLayer *message_layer = NULL;    // MESSAGE LAYER
-TextLayer *iob_layer = NULL;            // IOB LAYER
-TextLayer *dummy_layer = NULL;          // DUMMY LAYER - workaround for SDK bug
-TextLayer *battlevel_layer = NULL;
-TextLayer *watch_battlevel_layer = NULL;
+static TextLayer *bg_layer = NULL;
+static TextLayer *cgmtime_layer = NULL;
+static TextLayer *delta_layer = NULL;
+static TextLayer *message_layer = NULL;
+static TextLayer *iob_layer = NULL;
+static TextLayer *dummy_layer = NULL;  // Workaround for SDK bug, IoB layer disappears without this
+static TextLayer *battlevel_layer = NULL;
+static TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
-TextLayer *date_layer = NULL;
+static TextLayer *date_layer = NULL;
 static Layer *date_outline_layer = NULL;
 
 // DEBUG: Array to hold debug outline layers
@@ -43,14 +43,14 @@ static Layer *debug_outline_layers[MAX_DEBUG_OUTLINES];
 static int debug_outline_count = 0;
 #endif
 
-BitmapLayer *icon_layer = NULL;
-BitmapLayer *bg_trend_layer = NULL;
+static BitmapLayer *icon_layer = NULL;
+static BitmapLayer *bg_trend_layer = NULL;
 
 
-GBitmap *icon_bitmap = NULL;
-GBitmap *appicon_bitmap = NULL;
-GBitmap *specialvalue_bitmap = NULL;
-GBitmap *bg_trend_bitmap = NULL;
+static GBitmap *icon_bitmap = NULL;
+static GBitmap *appicon_bitmap = NULL;
+static GBitmap *specialvalue_bitmap = NULL;
+static GBitmap *bg_trend_bitmap = NULL;
 
 static char time_watch_text[] = "00:00";
 static char date_text[] = "Wed 13 Jan";
@@ -413,55 +413,19 @@ int myBGAtoi(char *str) {
     return res;
 } // end myBGAtoi
 
-static void destroy_null_GBitmap(GBitmap **GBmp_image) {
-    //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL GBITMAP: ENTER CODE");
-
-    if (*GBmp_image != NULL) {
-        //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL GBITMAP: POINTER EXISTS, DESTROY BITMAP IMAGE");
-        gbitmap_destroy(*GBmp_image);
-        if (*GBmp_image != NULL) {
-            //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL GBITMAP: POINTER EXISTS, SET POINTER TO NULL");
-            *GBmp_image = NULL;
-        }
-    }
-
-    //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL GBITMAP: EXIT CODE");
-} // end destroy_null_GBitmap
-
-static void destroy_null_BitmapLayer(BitmapLayer **bmp_layer) {
-    //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL BITMAP: ENTER CODE");
-
-    if (*bmp_layer != NULL) {
-        //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL BITMAP: POINTER EXISTS, DESTROY BITMAP LAYER");
-        bitmap_layer_destroy(*bmp_layer);
-        if (*bmp_layer != NULL) {
-            //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL BITMAP: POINTER EXISTS, SET POINTER TO NULL");
-            *bmp_layer = NULL;
-        }
-    }
-
-    //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL BITMAP: EXIT CODE");
-} // end destroy_null_BitmapLayer
-
-static void destroy_null_TextLayer(TextLayer **txt_layer) {
-    //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL TEXT LAYER: ENTER CODE");
-
-    if (*txt_layer != NULL) {
-        //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL TEXT LAYER: POINTER EXISTS, DESTROY TEXT LAYER");
-        text_layer_destroy(*txt_layer);
-        if (*txt_layer != NULL) {
-            //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL TEXT LAYER: POINTER EXISTS, SET POINTER TO NULL");
-            *txt_layer = NULL;
-        }
-    }
-//APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL TEXT LAYER: EXIT CODE");
-} // end destroy_null_TextLayer
+// Macro to safely destroy any layer type and set pointer to NULL
+#define DESTROY_SAFE(type, ptr) do { \
+    if (*(ptr) != NULL) { \
+        type##_destroy(*(ptr)); \
+        *(ptr) = NULL; \
+    } \
+} while(0)
 
 static void create_update_bitmap(GBitmap **bmp_image, BitmapLayer *bmp_layer, const int resource_id) {
     //APP_LOG(APP_LOG_LEVEL_INFO, " CREATE UPDATE BITMAP: ENTER CODE");
 
     // if bitmap pointer exists, destroy and set to NULL
-    destroy_null_GBitmap(bmp_image);
+    DESTROY_SAFE(gbitmap, bmp_image);
 
     // create bitmap and pointer
     //APP_LOG(APP_LOG_LEVEL_INFO, " CREATE UPDATE BITMAP: CREATE BITMAP");
@@ -2366,33 +2330,29 @@ void window_unload_cgm(Window *window_cgm) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD, APP SYNC DEINIT");
     app_sync_deinit(&sync_cgm);
 
-    //destroy the trend bitmap and layer
-    destroy_null_GBitmap(&bg_trend_bitmap);
-    destroy_null_BitmapLayer(&bg_trend_layer);
-    //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD, DESTROY GBITMAPS IF EXIST");
-    destroy_null_GBitmap(&icon_bitmap);
-    destroy_null_GBitmap(&appicon_bitmap);
-    destroy_null_GBitmap(&specialvalue_bitmap);
+    // Destroy bitmaps
+    DESTROY_SAFE(gbitmap, &bg_trend_bitmap);
+    DESTROY_SAFE(gbitmap, &icon_bitmap);
+    DESTROY_SAFE(gbitmap, &appicon_bitmap);
+    DESTROY_SAFE(gbitmap, &specialvalue_bitmap);
 
-    //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD, DESTROY BITMAPS IF EXIST");
-    destroy_null_BitmapLayer(&icon_layer);
+    // Destroy bitmap layers
+    DESTROY_SAFE(bitmap_layer, &bg_trend_layer);
+    DESTROY_SAFE(bitmap_layer, &icon_layer);
 
-    //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD, DESTROY TEXT LAYERS IF EXIST");
-    destroy_null_TextLayer(&bg_layer);
-    destroy_null_TextLayer(&cgmtime_layer);
-    destroy_null_TextLayer(&delta_layer);
-    destroy_null_TextLayer(&iob_layer);
-    destroy_null_TextLayer(&message_layer);
-    destroy_null_TextLayer(&battlevel_layer);
-    destroy_null_TextLayer(&watch_battlevel_layer);
-    destroy_null_TextLayer(&time_watch_layer);
-    destroy_null_TextLayer(&date_layer);
+    // Destroy text layers
+    DESTROY_SAFE(text_layer, &bg_layer);
+    DESTROY_SAFE(text_layer, &cgmtime_layer);
+    DESTROY_SAFE(text_layer, &delta_layer);
+    DESTROY_SAFE(text_layer, &iob_layer);
+    DESTROY_SAFE(text_layer, &message_layer);
+    DESTROY_SAFE(text_layer, &battlevel_layer);
+    DESTROY_SAFE(text_layer, &watch_battlevel_layer);
+    DESTROY_SAFE(text_layer, &time_watch_layer);
+    DESTROY_SAFE(text_layer, &date_layer);
 
-    // Destroy date outline layer
-    if (date_outline_layer != NULL) {
-        layer_destroy(date_outline_layer);
-        date_outline_layer = NULL;
-    }
+    // Destroy layers
+    DESTROY_SAFE(layer, &date_outline_layer);
 
     // DEBUG: Clean up all debug outline layers
 #ifdef DEBUG_OUTLINE
