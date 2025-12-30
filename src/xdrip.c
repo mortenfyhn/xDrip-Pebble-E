@@ -1994,7 +1994,7 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating BG Text layer");
 #endif
-    const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
+    const int bg_layer_width = 92; // Just enough for "20.0" in Bitham 42
     const int bg_layer_height = font_42_height;
     const int bg_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, (PBL_DISPLAY_WIDTH - bg_layer_width) / 2);
     const int bg_layer_y = first_line_y;
@@ -2002,7 +2002,7 @@ void window_load_cgm(Window *window_cgm) {
     text_layer_set_text_color(bg_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(bg_layer, GColorClear);
     text_layer_set_font(bg_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-    text_layer_set_text_alignment(bg_layer, GTextAlignmentCenter);
+    text_layer_set_text_alignment(bg_layer, GTextAlignmentRight);
     layer_add_child(window_layer_cgm, text_layer_get_layer(bg_layer));
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_BG)
     add_debug_outline(window_layer_cgm, text_layer_get_layer(bg_layer));
