@@ -1985,6 +1985,8 @@ void window_load_cgm(Window *window_cgm) {
     const int font_24_height = 24;
     const int font_42_height = 42;
     const int bitham_42_cap_height = 30;
+    const int first_line_y = EDGE_MARGIN - PBL_IF_RECT_ELSE(12, 6);
+    const int second_line_y = first_line_y + 36;
 
     // LAYER: BG
     // Shows current blood glucose as text, like "10.0"
@@ -1995,7 +1997,7 @@ void window_load_cgm(Window *window_cgm) {
     const int bg_layer_width = 84; // Just enough for "10.0" in Bitham 42
     const int bg_layer_height = font_42_height;
     const int bg_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, (PBL_DISPLAY_WIDTH - bg_layer_width) / 2);
-    const int bg_layer_y = EDGE_MARGIN - PBL_IF_RECT_ELSE(12, 6);
+    const int bg_layer_y = first_line_y;
     bg_layer = text_layer_create(GRect(bg_layer_x, bg_layer_y, bg_layer_width, bg_layer_height));
     text_layer_set_text_color(bg_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(bg_layer, GColorClear);
@@ -2042,8 +2044,8 @@ void window_load_cgm(Window *window_cgm) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating CGM Time Ago Bitmap layer");
 #endif
     const int cgmtime_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
-    const int cgmtime_layer_y = bg_layer_y + 36;
-    const int cgmtime_layer_width = 34;
+    const int cgmtime_layer_y = second_line_y;
+    const int cgmtime_layer_width = 34; // Just wide enough for "59m"
     const int cgmtime_layer_height = font_24_height;
     cgmtime_layer = text_layer_create(GRect(cgmtime_layer_x, cgmtime_layer_y, cgmtime_layer_width, cgmtime_layer_height));
     text_layer_set_text_color(cgmtime_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
@@ -2065,7 +2067,7 @@ void window_load_cgm(Window *window_cgm) {
     const int delta_layer_width = 100;
     const int delta_layer_height = font_24_height;
     const int delta_layer_x = PBL_DISPLAY_WIDTH - delta_layer_width - PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
-    const int delta_layer_y = bg_layer_y + 36;
+    const int delta_layer_y = second_line_y;
     delta_layer = text_layer_create(GRect(delta_layer_x, delta_layer_y, delta_layer_width, delta_layer_height));
     text_layer_set_text_color(delta_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(delta_layer, GColorClear);
