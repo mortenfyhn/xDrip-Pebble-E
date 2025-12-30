@@ -4,9 +4,16 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-Pebble watchface for displaying blood glucose data from xDrip. Shows BG readings, trend graph, delta, time ago, IoB (insulin on board from Minimed pump companion app), and time/date.
+Pebble watchface for displaying blood glucose data from xDrip (Android app). The watchface receives data via Bluetooth from the xDrip app running on the phone.
 
-**Target Hardware**: Pebble 2 Duo - 144x168 px black & white display (similar to Pebble 2). Use `PBL_BW` conditional compilation paths.
+**Target Hardware**: All Pebble platforms (B&W and color, rectangular and round). Layout code is designed to work across all platforms. Primary testing device is Pebble 2 Duo (144x168 px B&W).
+
+## Terminology
+
+- **BG** - Blood glucose
+- **CGM** - Continuous glucose monitor/monitoring
+- **Delta** - Change in blood glucose between readings
+- **IoB** - Insulin on Board (from Minimed pump companion app)
 
 ## Building
 
@@ -73,3 +80,7 @@ Message handling in `inbox_received_handler_cgm()` at line 1563.
 **Test mode**: Toggle `TEST_MODE` in src/xdrip.c line 8, or use `#include "test_mode.h"` for test data.
 
 **Debug mode**: Set `DEBUG_LEVEL 1` in src/xdrip.c line 6 for verbose logging (must be 0 for release).
+
+## Resources
+
+**Pebble SDK Documentation**: https://developer.rebble.io - Official Pebble SDK documentation (C API reference, layer management, best practices)
