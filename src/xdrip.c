@@ -33,8 +33,8 @@ static TextLayer *dummy_layer = NULL;  // Workaround for SDK bug, IoB layer disa
 static TextLayer *battlevel_layer = NULL;
 static TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
+static TextLayer *weekday_layer = NULL;
 static TextLayer *date_layer = NULL;
-static Layer *date_outline_layer = NULL;
 
 // DEBUG: Array to hold debug outline layers
 #ifdef DEBUG_OUTLINE
@@ -53,7 +53,8 @@ static GBitmap *specialvalue_bitmap = NULL;
 static GBitmap *bg_trend_bitmap = NULL;
 
 static char time_watch_text[] = "00:00";
-static char date_text[] = "Wed 13 Jan";
+static char weekday_text[4];  // "Mon"-"Sun" + null terminator
+static char day_text[3];      // "1"-"31" + null terminator
 
 // variables for AppSync
 AppSync sync_cgm;
@@ -153,9 +154,7 @@ static const uint32_t WEEKAGO = 7 * (24 * 60 * 60);
 static const uint16_t MS_IN_A_SECOND = 1000;
 
 // Constants for string buffers
-// If add month to date, buffer size needs to increase to 12; also need to reformat date_text init string
 static const uint8_t TIME_TEXTBUFF_SIZE = 6;
-static const uint8_t DATE_TEXTBUFF_SIZE = 11;
 static const uint8_t LABEL_BUFFER_SIZE = 6;
 static const uint8_t TIMEAGO_BUFFER_SIZE = 10;
 
@@ -669,11 +668,16 @@ void BT_timer_callback(void *data) {
 
 } // end BT_timer_callback
 
-// Format and display the date (day of month only)
+// Format and display the date (weekday and day of month on separate layers)
 static void format_and_display_date(struct tm *time_info) {
-    size_t result = strftime(date_text, DATE_TEXTBUFF_SIZE, "%d", time_info);
-    if (result != 0) {
-        text_layer_set_text(date_layer, date_text);
+    size_t weekday_result = strftime(weekday_text, sizeof(weekday_text), "%a", time_info);
+    size_t day_result = strftime(day_text, sizeof(day_text), "%d", time_info);
+
+    if (weekday_result != 0) {
+        text_layer_set_text(weekday_layer, weekday_text);
+    }
+    if (day_result != 0) {
+        text_layer_set_text(date_layer, day_text);
     }
 }
 
@@ -1929,15 +1933,6 @@ void handle_second_tick_cgm(struct tm *tick_time_cgm, TimeUnits units_changed_cg
 
 } // end handle_minute_tick_cgm
 
-
-
-// Layer update procedure to draw date window outline
-static void date_outline_update_proc(Layer *layer, GContext *ctx) {
-    GRect bounds = layer_get_bounds(layer);
-    graphics_context_set_stroke_color(ctx, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
-    graphics_draw_rect(ctx, bounds);
-}
-
 // DEBUG: Layer update procedure to draw outline
 #ifdef DEBUG_OUTLINE
 static void debug_outline_update_proc(Layer *layer, GContext *ctx) {
@@ -1982,6 +1977,7 @@ void window_load_cgm(Window *window_cgm) {
     window_layer_cgm = window_get_root_layer(window_cgm);
 
     // LAYOUT CONSTANTS
+    const int font_18_height = 18;
     const int font_24_height = 24;
     const int font_42_height = 42;
     const int bitham_42_cap_height = 30;
@@ -2149,7 +2145,7 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Time Text layer");
 #endif
-    const int time_layer_width = 126;
+    const int time_layer_width = 121; // Just enough for "20:00"
     const int time_layer_height = font_42_height;
     const int time_layer_x = PBL_IF_RECT_ELSE(-1, (PBL_DISPLAY_WIDTH - time_layer_width) / 2);
     const int time_layer_y = PBL_DISPLAY_HEIGHT - font_42_height - EDGE_MARGIN - PBL_IF_ROUND_ELSE(12, 0);
@@ -2163,39 +2159,50 @@ void window_load_cgm(Window *window_cgm) {
     add_debug_outline(window_layer_cgm, text_layer_get_layer(time_watch_layer));
 #endif
 
-    // LAYER: CURRENT ACTUAL DATE FROM APP
-    // Show the day of month, like "30" with an outline to imitate a date window
+    // LAYER: WEEKDAY
+    // Show weekday like "Tue" on first line, separate layers for weekday and
+    // day of month for tighter line spacing
     //
 #ifdef DEBUG_LEVEL
-    APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Date Text layer");
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating Weekday Text layer");
 #endif
-    const int date_layer_width = 22; // Should fit two digits in Gothic 24 bold
-    const int date_layer_height = font_24_height;
-    const int date_layer_x = PBL_DISPLAY_WIDTH - date_layer_width - EDGE_MARGIN;
-    const int date_layer_y = 132;
-    date_layer = text_layer_create(GRect(date_layer_x, date_layer_y, date_layer_width, date_layer_height));
+    const int weekday_layer_width = 28; // Just enough for "Mon"
+    const int weekday_layer_height = font_18_height;
+    const int weekday_layer_x = PBL_DISPLAY_WIDTH - weekday_layer_width - EDGE_MARGIN / 4;
+    const int weekday_layer_y = 128;  // Moved down for tighter spacing
+    weekday_layer = text_layer_create(GRect(weekday_layer_x, weekday_layer_y,
+                                             weekday_layer_width, weekday_layer_height));
+    text_layer_set_text_color(weekday_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
+    text_layer_set_background_color(weekday_layer, GColorClear);
+    text_layer_set_font(weekday_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+    text_layer_set_text_alignment(weekday_layer, GTextAlignmentCenter);
+
+    // LAYER: DAY OF MONTH
+    // Show day of month like "30" below weekday
+    //
+#ifdef DEBUG_LEVEL
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating Day Text layer");
+#endif
+    const int day_layer_width = 28;
+    const int day_layer_height = font_24_height;
+    const int day_layer_x = weekday_layer_x;  // Align with weekday
+    const int day_layer_y = 139;  // Fixed position
+    date_layer = text_layer_create(GRect(day_layer_x, day_layer_y,
+                                         day_layer_width, day_layer_height));
     text_layer_set_text_color(date_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(date_layer, GColorClear);
     text_layer_set_font(date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(date_layer, GTextAlignmentRight);
+    text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
+
     draw_date_from_app();
-    // Add date window outline
-    const int outline_width = date_layer_width;
-    const int outline_height = 18;
-    const int outline_x_offset = 1;  // offset from date layer x position
-    const int outline_y_offset = 8;  // offset from date layer y position
-    GRect date_frame = layer_get_frame(text_layer_get_layer(date_layer));
-    GRect outline_rect = GRect(
-        date_frame.origin.x + outline_x_offset, date_frame.origin.y + outline_y_offset,
-        outline_width, outline_height);
-    date_outline_layer = layer_create(outline_rect);
-    layer_set_update_proc(date_outline_layer, date_outline_update_proc);
+
 #if PBL_RECT
-    // Doesn't really fit on round watch
+    // Add both layers to window (doesn't fit on round watch)
+    layer_add_child(window_layer_cgm, text_layer_get_layer(weekday_layer));
     layer_add_child(window_layer_cgm, text_layer_get_layer(date_layer));
-    layer_add_child(window_layer_cgm, date_outline_layer);
 #endif
 #if defined(DEBUG_OUTLINE) && defined(DEBUG_OUTLINE_DATE)
+    add_debug_outline(window_layer_cgm, text_layer_get_layer(weekday_layer));
     add_debug_outline(window_layer_cgm, text_layer_get_layer(date_layer));
 #endif
 
@@ -2351,10 +2358,8 @@ void window_unload_cgm(Window *window_cgm) {
     DESTROY_SAFE(text_layer, &battlevel_layer);
     DESTROY_SAFE(text_layer, &watch_battlevel_layer);
     DESTROY_SAFE(text_layer, &time_watch_layer);
+    DESTROY_SAFE(text_layer, &weekday_layer);
     DESTROY_SAFE(text_layer, &date_layer);
-
-    // Destroy layers
-    DESTROY_SAFE(layer, &date_outline_layer);
 
     // DEBUG: Clean up all debug outline layers
 #ifdef DEBUG_OUTLINE
