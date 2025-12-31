@@ -1,16 +1,19 @@
 #include <pebble.h>
 #include "config.h"
 
-// IDE DEBUG ONLY
-//#define PBL_HEALTH
+// PBL_HEALTH: Enable Pebble Health API (heart rate, steps, data logging).
+// Not available on Aplite platform.
+// #define PBL_HEALTH
 
-/* The line below will set the debug message level.
-Make sure you set this to 0 before building a release. */
+// DEBUG_LEVEL: Controls logging verbosity (APP_LOG statements to console).
+// Set to 1 for basic debug logs, higher values for more verbose logging.
+// Comment out before building a release.
+// #define DEBUG_LEVEL 1
 
-//#define DEBUG_LEVEL 1
-
-// global window variables
-// ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
+// DEBUG: Show error text directly on the watch.
+// When critical errors occur, displays error codes like "APP_MSG_BUSY" on screen
+// instead of "RSTRT WCH/PH". Useful for debugging communication issues with phone.
+// #define DEBUG
 
 const char FACE_VERSION[] = "xDrip-Pebble2";
 #ifdef PBL_PLATFORM_APLITE
@@ -26,7 +29,6 @@ static TextLayer *cgmtime_layer = NULL;
 static TextLayer *delta_layer = NULL;
 static TextLayer *message_layer = NULL;
 static TextLayer *iob_layer = NULL;
-static TextLayer *dummy_layer = NULL;  // Workaround for SDK bug, IoB layer disappears without this
 static TextLayer *battlevel_layer = NULL;
 static TextLayer *watch_battlevel_layer = NULL;
 static TextLayer *time_watch_layer = NULL;
@@ -124,9 +126,6 @@ static uint8_t lastAlertTime = 0;
 
 // global special value alert
 static bool specvalue_alert = false;
-
-// global overwrite variables for vibrating when hit a specific BG if already in a snooze
-static bool specvalue_overwrite = false;
 
 // global variables for vibrating in special conditions
 static bool DoubleDownAlert = false;
@@ -290,7 +289,7 @@ static const uint8_t NONE_TIMEAGO_ICON_INDX = 0;
 static const uint8_t PHONEON_ICON_INDX = 1;
 static const uint8_t PHONEOFF_ICON_INDX = 2;
 */
-//#ifdef DEBUG_LEVEL
+#if defined(DEBUG_LEVEL) || defined(DEBUG)
 static char *translate_app_error(AppMessageResult result) {
     switch (result) {
         case APP_MSG_OK:
@@ -325,7 +324,9 @@ static char *translate_app_error(AppMessageResult result) {
             return "APP UNKNOWN ERROR";
     }
 }
+#endif
 
+#ifdef DEBUG_LEVEL
 static char *translate_dict_error(DictionaryResult result) {
     switch (result) {
         case DICT_OK:
@@ -342,7 +343,7 @@ static char *translate_dict_error(DictionaryResult result) {
             return "DICT UNKNOWN ERROR";
     }
 }
-//#endif
+#endif
 
 int myAtoi(char *str) {
 
@@ -1541,7 +1542,6 @@ static void send_cmd_cgm(void) {
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "send_cmd_cgm called.");
 #endif
-    AppMessageResult sendcmd_senderr = APP_MSG_OK;
     AppMessageResult sendcmd_openerr = APP_MSG_OK;
 
     sendcmd_openerr = app_message_outbox_begin(&iter);
@@ -1565,14 +1565,16 @@ static void send_cmd_cgm(void) {
 
 
 
-//#ifdef DEBUG_LEVEL
-    sendcmd_senderr = app_message_outbox_send();
+#ifdef DEBUG_LEVEL
+    AppMessageResult sendcmd_senderr = app_message_outbox_send();
     if (sendcmd_senderr != APP_MSG_OK && sendcmd_senderr != APP_MSG_BUSY && sendcmd_senderr != APP_MSG_SEND_REJECTED) {
         APP_LOG(APP_LOG_LEVEL_INFO, "WATCH SENDCMD SEND ERROR");
         APP_LOG(APP_LOG_LEVEL_DEBUG, "WATCH SENDCMD SEND ERR CODE: %i RES: %s", sendcmd_senderr,
                 translate_app_error(sendcmd_senderr));
     }
-//#endif
+#else
+    app_message_outbox_send();
+#endif
     //free(iter);
     //APP_LOG(APP_LOG_LEVEL_INFO, "SEND CMD OUT, SENT MSG TO APP");
 
