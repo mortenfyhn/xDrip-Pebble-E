@@ -2145,9 +2145,9 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating Watch Time Text layer");
 #endif
-    const int time_layer_width = 121; // Just enough for "20:00"
+    const int time_layer_width = 126; // Just enough for "00:00"
     const int time_layer_height = font_42_height;
-    const int time_layer_x = PBL_IF_RECT_ELSE(-1, (PBL_DISPLAY_WIDTH - time_layer_width) / 2);
+    const int time_layer_x = PBL_IF_RECT_ELSE(-8, (PBL_DISPLAY_WIDTH - time_layer_width) / 2);
     const int time_layer_y = PBL_DISPLAY_HEIGHT - font_42_height - edge_margin - PBL_IF_ROUND_ELSE(12, 0);
     time_watch_layer = text_layer_create(GRect(time_layer_x, time_layer_y, time_layer_width, time_layer_height));
     text_layer_set_text_color(time_watch_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
