@@ -9,9 +9,6 @@ Make sure you set this to 0 before building a release. */
 
 //#define DEBUG_LEVEL 1
 
-// Layout constants
-#define EDGE_MARGIN 4
-
 // global window variables
 // ANYTHING THAT IS CALLED BY PEBBLE API HAS TO BE NOT STATIC
 
@@ -1977,11 +1974,12 @@ void window_load_cgm(Window *window_cgm) {
     window_layer_cgm = window_get_root_layer(window_cgm);
 
     // LAYOUT CONSTANTS
+    const int edge_margin = 4;
     const int font_18_height = 18;
     const int font_24_height = 24;
     const int font_42_height = 42;
     const int bitham_42_cap_height = 30;
-    const int first_line_y = EDGE_MARGIN - PBL_IF_RECT_ELSE(12, 6);
+    const int first_line_y = edge_margin - PBL_IF_RECT_ELSE(12, 6);
     const int second_line_y = first_line_y + 36;
 
     // LAYER: BG
@@ -1992,7 +1990,7 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     const int bg_layer_width = 92; // Just enough for "20.0" in Bitham 42
     const int bg_layer_height = font_42_height;
-    const int bg_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, (PBL_DISPLAY_WIDTH - bg_layer_width) / 2);
+    const int bg_layer_x = PBL_IF_RECT_ELSE(edge_margin, (PBL_DISPLAY_WIDTH - bg_layer_width) / 2);
     const int bg_layer_y = first_line_y;
     bg_layer = text_layer_create(GRect(bg_layer_x, bg_layer_y, bg_layer_width, bg_layer_height));
     text_layer_set_text_color(bg_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
@@ -2015,10 +2013,10 @@ void window_load_cgm(Window *window_cgm) {
     const int icon_layer_width = PBL_IF_BW_ELSE(bitham_42_cap_height, 60);
     const int icon_layer_height = PBL_IF_BW_ELSE(bitham_42_cap_height, 60);
 #if defined(PBL_RECT) && defined(PBL_BW)
-    const int icon_layer_x = EDGE_MARGIN + bg_layer_width + icon_layer_kern;
-    const int icon_layer_y = EDGE_MARGIN;
+    const int icon_layer_x = edge_margin + bg_layer_width + icon_layer_kern;
+    const int icon_layer_y = edge_margin;
 #elif defined(PBL_RECT) && defined(PBL_COLOR)
-    const int icon_layer_x = EDGE_MARGIN + bg_layer_width + icon_layer_kern - 10;
+    const int icon_layer_x = edge_margin + bg_layer_width + icon_layer_kern - 10;
     const int icon_layer_y = -10;
 #elif defined(PBL_ROUND)
     const int icon_layer_x = (PBL_DISPLAY_WIDTH - icon_layer_width) / 2;
@@ -2039,7 +2037,7 @@ void window_load_cgm(Window *window_cgm) {
 #ifdef DEBUG_LEVEL
     APP_LOG(APP_LOG_LEVEL_INFO, "Creating CGM Time Ago Bitmap layer");
 #endif
-    const int cgmtime_layer_x = PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int cgmtime_layer_x = PBL_IF_RECT_ELSE(edge_margin, 20);
     const int cgmtime_layer_y = second_line_y;
     const int cgmtime_layer_width = 34; // Just wide enough for "59m"
     const int cgmtime_layer_height = font_24_height;
@@ -2062,7 +2060,7 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     const int delta_layer_width = 100;
     const int delta_layer_height = font_24_height;
-    const int delta_layer_x = PBL_DISPLAY_WIDTH - delta_layer_width - PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int delta_layer_x = PBL_DISPLAY_WIDTH - delta_layer_width - PBL_IF_RECT_ELSE(edge_margin, 20);
     const int delta_layer_y = second_line_y;
     delta_layer = text_layer_create(GRect(delta_layer_x, delta_layer_y, delta_layer_width, delta_layer_height));
     text_layer_set_text_color(delta_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
@@ -2083,7 +2081,7 @@ void window_load_cgm(Window *window_cgm) {
     // Overlaps delta layer intentionally, don't use both at the same time, for now.
     const int iob_layer_width = 70; // Wide enough for "30.000U"
     const int iob_layer_height = font_24_height;
-    const int iob_layer_x = PBL_DISPLAY_WIDTH - iob_layer_width - PBL_IF_RECT_ELSE(EDGE_MARGIN, 20);
+    const int iob_layer_x = PBL_DISPLAY_WIDTH - iob_layer_width - PBL_IF_RECT_ELSE(edge_margin, 20);
     const int iob_layer_y = bg_layer_y + 36;
     iob_layer = text_layer_create(GRect(iob_layer_x, iob_layer_y, iob_layer_width, iob_layer_height));
     text_layer_set_text_color(iob_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
@@ -2148,7 +2146,7 @@ void window_load_cgm(Window *window_cgm) {
     const int time_layer_width = 121; // Just enough for "20:00"
     const int time_layer_height = font_42_height;
     const int time_layer_x = PBL_IF_RECT_ELSE(-1, (PBL_DISPLAY_WIDTH - time_layer_width) / 2);
-    const int time_layer_y = PBL_DISPLAY_HEIGHT - font_42_height - EDGE_MARGIN - PBL_IF_ROUND_ELSE(12, 0);
+    const int time_layer_y = PBL_DISPLAY_HEIGHT - font_42_height - edge_margin - PBL_IF_ROUND_ELSE(12, 0);
     time_watch_layer = text_layer_create(GRect(time_layer_x, time_layer_y, time_layer_width, time_layer_height));
     text_layer_set_text_color(time_watch_layer, PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack));
     text_layer_set_background_color(time_watch_layer, GColorClear);
@@ -2168,7 +2166,7 @@ void window_load_cgm(Window *window_cgm) {
 #endif
     const int weekday_layer_width = 28; // Just enough for "Mon"
     const int weekday_layer_height = font_18_height;
-    const int weekday_layer_x = PBL_DISPLAY_WIDTH - weekday_layer_width - EDGE_MARGIN / 4;
+    const int weekday_layer_x = PBL_DISPLAY_WIDTH - weekday_layer_width - edge_margin / 4;
     const int weekday_layer_y = 128;  // Moved down for tighter spacing
     weekday_layer = text_layer_create(GRect(weekday_layer_x, weekday_layer_y,
                                              weekday_layer_width, weekday_layer_height));
